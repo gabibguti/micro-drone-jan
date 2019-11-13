@@ -21,39 +21,43 @@
   <div class="vh-100 dt w-100 bg-moon-gray">
     <div class="dtc tc fw2 white-90 ph3 ph4-l vh-100">
       <div class="pa4">
-        <p class="f1-l tl">Estantes</p>
+        <p class="f1-l tl">Estante</p>
         <div class="flex-row flex pt3 vh-75">
           <div class="flex w-30">
-            Description
+            <div class="fl ma5">
+              <div class="flex-column flex">
+                <div class="flex fw4 f4">ESPAÇO DE ESTOQUE: 10</div>
+                <div class="flex fw4 f4 pt3">No. PACOTES: 2</div>
+                <div class="flex fw4 f4 pt3">No. ESPAÇOS LIVRES: 2</div>
+              </div>
+            </div>
           </div>
           <div class="flex w-70">
             <div class="">
-              <!-- <div class="" style="background-image: url({{SVG_EmptyShelf}});
-          background-repeat: no-repeat; background-size: cover;"> -->
-                <span>
-                  <div class="flex-column flex">
-                    {% for row in range(0, 2) %}
-                    <div class="flex">
-                      <div class="flex-row flex w-100 pl5 pr5 pt3">
-                        {% for col in range(0, 5) %}
-                        <div class="fl w-20 pa3">
-                          <img src={{SVG_Package}} class="h-auto" />
-                        </div>
-                        {% endfor %}
+              <span>
+                <div class="flex-column flex">
+                  {% for row in range(0, 2) %}
+                  <div class="flex">
+                    <div class="flex-row flex w-100 pl5 pr5 pt3">
+                      {% for col in range(0, 5) %}
+                      <div class="fl w-20 pa3">
+                        <img src={{SVG_Package}} class="h-auto" />
                       </div>
+                      {% endfor %}
                     </div>
-                    <hr>
-                    {% endfor %}
                   </div>
-                </span>
+                  <hr>
+                  {% endfor %}
+                </div>
+              </span>
 
-              </div>
             </div>
-            <!-- <img src={{SVG_Package}} class="h-20" /> -->
           </div>
+          <!-- <img src={{SVG_Package}} class="h-20" /> -->
         </div>
       </div>
     </div>
+  </div>
   </div>
 </body>
 
