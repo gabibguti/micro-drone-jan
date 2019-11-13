@@ -21,13 +21,14 @@ def update_all():
             collection.insert(package)
 
 def check_status(dt):
-    return "okay" if dt > datetime.now() else "delayed"
+    # FIXME use datetime.strptime / strftime
+    return "okay" if datetime(dt) > datetime.now() else "delayed"
 
 @app.route('/')
 def hello_world():
     return 'Hello, World!'
 
-@app.route('/add_package/<int:package_id>/<str:date>')
+@app.route('/add_package/<int:package_id>/<string:date>')
 def add_package(package_id, date):
     # Note: data must be in the format: YYYY-MM-DD
     dt = date.split('-')
@@ -43,8 +44,8 @@ def add_package(package_id, date):
 
 @app.route('/package_status/<int:package_id>')
 def package_status(package_id):
-    search = {"id": package_id}
-    package = collection.find_one(search)
+    query = {"id": package_id}
+    package = collection.find_one(query)
 
     # update package status
     new_status = check_status(package["date"])
