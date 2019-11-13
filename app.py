@@ -30,6 +30,3 @@ if __name__ == '__main__':
     app.run(5000, debug=False)
 
 
-busca = {"chave1": valor1, "chave2": {"$gt": valor2}}
-ordenacao = [ ["idade", DESCENDING] ]
-documento = colecao.find_one(busca, sort=ordenacao)
