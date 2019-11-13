@@ -62,7 +62,7 @@ def package_status(package_id):
     if new_status != package["status"]:
         package["status"] = new_status
         # TODO use pymongo $set to update values, instead of adding new ones
-        # db.update({"id": package_id}, {"$set": package })
+        # db.update({"_id": package_id}, {"$set": package })
         collection.insert(package)
     print(json.dumps(package))
     return json.dumps(package)
