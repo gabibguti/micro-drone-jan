@@ -74,25 +74,25 @@ void loop()
         }
       }
       else if (cod == "emdia"){
-        int endereco = (getValue(texto, ' ', 1).toInt()-1)*7;
+        int endereco = (getValue(texto, ' ', 1).toInt()-1)*(PACKAGE_LED + GAP_LED);
         if (leds[endereco] == white){
           leds[endereco + 1] = CRGB::Green;
         }
       }
       else if (cod == "ultimodia"){
-        int endereco = (getValue(texto, ' ', 1).toInt()-1)*7;
+        int endereco = (getValue(texto, ' ', 1).toInt()-1)*(PACKAGE_LED + GAP_LED);
         if (leds[endereco] == white){
           leds[endereco + 1] = CRGB::Yellow;
         }
       }
       else if (cod == "atraso"){
-        int endereco = (getValue(texto, ' ', 1).toInt()-1)*7;
+        int endereco = (getValue(texto, ' ', 1).toInt()-1)*(PACKAGE_LED + GAP_LED);
         if (leds[endereco] == white){
           leds[endereco + 1] = CRGB::Red;
         }
       }
       else if (cod == "retirar"){
-        int endereco = (getValue(texto, ' ', 1).toInt()-1)*7;
+        int endereco = (getValue(texto, ' ', 1).toInt()-1)*(PACKAGE_LED + GAP_LED);
         if (leds[endereco] == white){
           leds[endereco] = CRGB::Black;
           leds[endereco + 1] = CRGB::Black;
@@ -100,7 +100,7 @@ void loop()
       }
       else if (cod == "chegou"){
         String condicao = getValue(texto, ' ', 1);
-        int endereco = (getValue(texto, ' ', 2).toInt()-1)*7;
+        int endereco = (getValue(texto, ' ', 2).toInt()-1)*(PACKAGE_LED + GAP_LED);
         if (leds[endereco] != white)
         {
           if (condicao == "emdia"){
