@@ -1,29 +1,31 @@
 from cv2 import *
+from datetime import datetime, timedelta
 
-def is_square(contour):
-    # initialize the shape name and approximate the contour
-    shape = "unidentified"
-    peri = arcLength(contour, True)
-    approx = approxPolyDP(contour, 0.04 * peri, True)
-    # if the shape has 4 vertices, it is either a square or a rectangle
-    if len(approx) == 4:
+def is_square(w, h):
+    # A square will have an aspect ratio that is approximately equal to one, otherwise, the shape is a rectangle
+    ar = w / float(h)
+    if ar >= 0.95 and ar <= 1.05: # Its a Square
         return True
-        # # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
-        # (x, y, w, h) = boundingRect(approx)
-        # ar = w / float(h)
-        # # a square will have an aspect ratio that is approximately equal to one, otherwise, the shape is a rectangle
-        # shape = "square" if ar >= 0.95 and ar <= 1.05 else "rectangle"
-    return False
+    else: # its a Rectangle
+        return False
 
 # Color bounds
-light_blue = (110, 50, 50)
-dark_blue = (130, 255, 255)
+# TODO: ajustar faixa de valores da cor azul
+# light_blue = (110, 50, 50)
+# dark_blue = (130, 255, 255)
+light_blue = (90, 50, 38)
+dark_blue = (150, 255, 255)
 
+# Variaveis Globais
 xRef = 0
 yRef = 0
-compRef = 0
-altRef = 0
+wRef = 0
+hRef = 0
 
+# TODO: ajustar intervalo de tolerancia entre cada detecção
+last_detect = datetime.now()
+detection_tolerance = timedelta(seconds=5)
+area_limit = 6000
 
 stream = VideoCapture(0)
 
@@ -48,20 +50,32 @@ while True:
     image, contornos, hierarchy = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
     area = 0
     for contorno in contornos:
-        print(contorno)
-        x, y, comprimento, altura = boundingRect(contorno)
-        if comprimento * altura > 2000 and comprimento * altura > area:
-            xRef = x
-            yRef = y
-            compRef = comprimento
-            altRef = altura
-            area = comprimento * altura
-    rectangle(blue_img, pt1=(xRef, yRef), pt2=(xRef + compRef, yRef + altRef), color=(0, 255, 0), thickness=3)
+        peri = arcLength(contorno, True)
+        approx = approxPolyDP(contorno, 0.04 * peri, True)
+        # if the shape has 4 vertices, it is either a square or a rectangle
+        if len(approx) == 4:
+            # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
+            (x, y, w, h) = boundingRect(approx)
+            # TODO: Ajustar valor de "area_limit"
+            if is_square(w,h) and w*h > area_limit and w*h > area:
 
+                # TODO-TODO: Tirar foto se posições das referencias tiverem sido alteradas e caso tenha passado x segundos:
+                # if xRef != x and yRef != y:
+                    # Take picture and save it
+                    # imwrite("test-pic.png", imagem)
+
+                xRef = x
+                yRef = y
+                wRef = w
+                hRef = h
+                area = w*h
+                print("\n\t\t\t\t SQUARE")
+                print("[REF] x:{}, y:{}, h:{}, l:{}, area:{}\n".format(xRef, yRef, wRef, hRef, area))
+                last_detect = datetime.now() + detection_tolerance
+
+    if last_detect > datetime.now():
+        rectangle(blue_img, pt1=(xRef, yRef), pt2=(xRef + wRef, yRef + hRef), color=(0, 255, 0), thickness=3)
     imshow("Minha Janela", blue_img)
-
-    # Take picture and save it # TODO
-    # imwrite("test-pic.png", imagem)
 
     # Mostra a imagem durante 1 milissegundo e interrompe loop quando tecla q for pressionada
     if waitKey(1) & 0xFF == ord("q"):
@@ -69,20 +83,3 @@ while True:
 
 stream.release()
 destroyAllWindows()
-
-
-# from cv2 import *
-# stream = VideoCapture(0)
-# while True:
-#     _, imagem = stream.read()
-#     # Desenho de Elementos na Imagem
-#     rectangle(imagem, pt1=(550,200), pt2=(850,300), color=(0,255,0), thickness=3)
-#     circle(imagem, (700,400), 90, color=(255,255,0), thickness=7)
-#     putText(imagem, "Jan K. S", (10,600), color=(255,255,255), thickness=4, fontFace=FONT_HERSHEY_SIMPLEX, fontScale=2)
-#     imshow("Minha Janela", imagem)
-#     if waitKey(1) & 0xFF == ord("q"):
-#         break
-#
-# stream.release()
-# destroyAllWindows()
-#
