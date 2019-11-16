@@ -16,7 +16,7 @@ collection = db["packages"]
 # {
 #     "id": <int>
 #     "date": <str: YYYY-MM-DD>
-#     "status": ["today", "delayed", "ok"]
+#     "status": ["delayed", "ok"]
 # }
 
 def update_all():
@@ -75,6 +75,6 @@ def get_delayed_package():
     return json.dumps(delayed_packages)
 
 if __name__ == '__main__':
-    app.run(5000, debug=False)
+    app.run(host='localhost', port=5000, debug=False)
 
 
