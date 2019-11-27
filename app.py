@@ -46,6 +46,14 @@ def move_forward():
     print(forward_message)
     return (''), 204
 
+@app.route('/all_packages')
+def get_all_packages():
+    update_all()
+    all_packages = list(collection.find())
+    for pkg in all_packages:
+      pkg.pop("_id", None)
+    return json.dumps(all_packages)
+
 @app.route('/add_package/<int:package_id>/<string:date>')
 def add_package(package_id, date):
     # Note: data must be in the format: YYYY-MM-DD
@@ -86,3 +94,4 @@ def get_delayed_package():
 
 if __name__ == '__main__':
     app.run(host='localhost', port=5000, debug=False)
+
