@@ -1,5 +1,5 @@
-from cv2 import *
 from datetime import datetime, timedelta
+from cv2 import *
 import os
 
 def is_square(w, h):
@@ -80,7 +80,7 @@ if __name__ == '__main__':
         blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
 
         # FIXME: Versoes diferentes do OpenCV podem causar problemas aqui na "findContours" (nesse caso foi utilizada a versão 3)
-        image, contornos, hierarchy = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
+        contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
         area = 0
         for contorno in contornos:
             peri = arcLength(contorno, True)
