@@ -9,4 +9,4 @@ def hello_world():
   return render_template('homepage.html', SVG_EmptyShelf=SVG_EmptyShelf, SVG_Package=SVG_Package)
 
 if __name__ == '__main__':
-    app.run(5000, debug=True)
+    app.run(debug=True)
