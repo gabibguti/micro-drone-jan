@@ -73,6 +73,8 @@ def package_status(package_id):
 def get_delayed_package():
     update_all()
     delayed_packages = list(collection.find({"status": "delayed"}))
+    for pkg in delayed_packages:
+      pkg.pop("_id", None)
     return json.dumps(delayed_packages)
 
 if __name__ == '__main__':
