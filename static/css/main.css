@@ -28,3 +28,7 @@ hr {
 .white-icon {
   color: white;
 }
+
+.opacity-on {
+  opacity: 0.2;
+}

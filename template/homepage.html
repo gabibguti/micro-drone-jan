@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+<meta http-equiv="refresh" content="5">
 
 <head>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
@@ -27,8 +28,9 @@
             <p class="f1-l">Estante</p>
           </div>
           <div class="flex w-20">
-            <form action="/forward/" method="post">
-              <button name="forwardBtn" type="submit" class="btn round-button transparent-button"><i class="fa fa-refresh white-icon"></i></button>
+            <form action="/refresh_shelf/" method="post">
+              <button name="forwardBtn" type="submit" class="btn round-button transparent-button"><i
+                  class="fa fa-refresh white-icon"></i></button>
             </form>
           </div>
         </div>
@@ -51,7 +53,13 @@
                     <div class="flex-row flex w-100 pl5 pr5 pt3">
                       {% for col in range(0, 5) %}
                       <div class="fl w-20 pa3">
+                        <p>#{{DATA_Packages[row][col]}}</p>
+                        {% if DATA_Packages[row][col] %}
                         <img src={{SVG_Package}} class="h-auto" />
+                        {% endif %}
+                        {% if not DATA_Packages[row][col] %}
+                        <img src={{SVG_Package}} class="h-auto opacity-on" />
+                        {% endif %}
                       </div>
                       {% endfor %}
                     </div>
