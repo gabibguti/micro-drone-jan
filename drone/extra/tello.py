@@ -3,7 +3,7 @@ import socket
 import subprocess
 import time
 import cv2 as cv
-import np
+import numpy as np
 import os
 import random
 class Tello:

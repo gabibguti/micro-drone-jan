@@ -1,6 +1,75 @@
 from cv2 import *
 from datetime import datetime, timedelta
 import os
+# from mov_drone import *
+from extra.tello import Tello
+from time import sleep
+from threading import Timer
+
+def para():
+    drone.land()
+
+
+def mov_dronee(x, y, z, w):
+    drone.goto(int(x), int(y), int(z), int(w))
+
+
+def dentroRegiao(img, xRef, yRef, wRef, hRef):
+    wReg = int(img.shape[0] * 2 / 3)
+    xReg = int(img.shape[0] / 6)
+    hReg = int(img.shape[1] * 2 / 3)
+    yReg = int(img.shape[1] / 6)
+
+    areaRef = wRef * hRef
+    # print("[REG] x:{}, y:{}, h:{}, l:{}, area:{}\n".format(xReg, yReg, wReg, hReg, areaRef))
+    if (xReg < xRef) and (yReg < yRef):
+        if (xReg + wReg) > (xRef + wRef):
+            if (yReg + hReg) > (yRef + hRef):
+                return True
+    return False
+
+
+def movEsq(xRef, xReg):
+    while xReg > xRef:
+        drone.rc(10, 0, 0, 0)
+    drone.rc(0, 0, 0, 0)
+
+
+def movDir(xLim, xRegLim):
+    while xLim > xRegLim:
+        drone.rc(-10, 0, 0, 0)
+    drone.rc(0, 0, 0, 0)
+
+
+def movCima(yLim, yRegLim):
+    while yLim > yRegLim:
+        drone.rc(0, 0, 10, 0)
+    drone.rc(0, 0, 0, 0)
+
+
+def movBaixo(yRef, yReg):
+    while yRef > yReg:
+        drone.rc(0, 0, -10, 0)
+    drone.rc(0, 0, 0, 0)
+
+
+def decola():
+    a = 7
+    drone.takeoff()
+
+    # sleep(a)
+    #mov_dronee(0, -30, 0, 100)  # direita olhando de tras
+    # drone.rc(10, 0, 0, 0)
+    # sleep(a)
+    #mov_dronee(0, 0, -20, 100)  # desce
+
+    #sleep(a)
+    #mov_dronee(0, 30, 0, 100)  # esquerda
+    #sleep(a)
+    #print("[INFO] Drone pronto")
+
+    # drone.land()  # pousa
+
 
 def is_square(w, h):
     # A square will have an aspect ratio that is approximately equal to one, otherwise, the shape is a rectangle
@@ -10,7 +79,9 @@ def is_square(w, h):
     else: # its a Rectangle
         return False
 
-def is_new_square(x, y):
+def is_new_square(x, xRef, y, yRef, tol):
+    xTol = tol
+    yTol = tol
     if (x > xRef - xTol and x < xRef + xTol) and (y > yRef - yTol and y < yRef + yTol):
         return False
     return True
@@ -23,6 +94,7 @@ curr_dir = os.getcwd()
 pics_dir = os.path.join(curr_dir, "tag-pics")
 
 if __name__ == '__main__':
+
     # Color bounds
     # TODO: ajustar faixa de valores da cor azul
     # light_blue = (110, 50, 50)
@@ -41,9 +113,9 @@ if __name__ == '__main__':
     # Asserts or creates directory where tags pictures will be storage
     if not os.path.exists(pics_dir):
         os.makedirs(pics_dir)
-    # else:
-        ## TODO: Delete all files boefore a new session or just for test purposes
-        # delete_picture_files()
+    else:
+        # TODO: Delete all files boefore a new session or just for test purposes
+        delete_picture_files()
 
 
     # TODO: Decidir se há necessidade de capturar mais de uma tag por vez
@@ -60,10 +132,32 @@ if __name__ == '__main__':
     detection_tolerance = timedelta(seconds=5)
     area_limit = 6000
 
-    stream = VideoCapture(0)
+    # Drone Vars
+    drone_x = 10
+    last_mov = datetime.now()
+    timer_drone = datetime.now()
+    drone_tolerance = timedelta(seconds=3)
+    drone_end = datetime.now() + timedelta(seconds=60)
+
+    drone = Tello("TELLO-C7AC08", test_mode=False)
+    # drone = Tello("TELLO-D023AE", test_mode=False)
+    drone.inicia_cmds()
+    # Set timeout drone init
+    sleep(5)
+    # decola()
+    first = True
 
     while True:
-        _, imagem = stream.read()
+        imagem = drone.current_image
+
+        if last_mov > datetime.now() or first:
+            drone.rc(drone_x,0,0,0)
+            drone_x = -drone_x
+            last_mov = datetime.now() + drone_tolerance  # starts timer
+            first = False
+            if last_mov > drone_end: #finish
+                drone.land()
+                break
 
         # Parte 1
         imagem_hsv = cvtColor(imagem, COLOR_BGR2HSV)
@@ -80,7 +174,7 @@ if __name__ == '__main__':
         blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
 
         # FIXME: Versoes diferentes do OpenCV podem causar problemas aqui na "findContours" (nesse caso foi utilizada a versão 3)
-        image, contornos, hierarchy = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
+        contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
         area = 0
         for contorno in contornos:
             peri = arcLength(contorno, True)
@@ -95,7 +189,8 @@ if __name__ == '__main__':
                     # FIXME: Por enquanto, basta obter novos valores para as posições X e Y diferentes dos últimos \
                     #  valores de Referência, para capturar uma nova foto, talvez pudessemos otimizar isso \
                     #  utilizando uma contagem de tempo desde de a última vez que uma foto foi tirada
-                    if is_new_square(x, y):
+                    if is_new_square(x, xRef, y, yRef, xTol):
+                        drone.rc(0, 0, 0, 0)
                         print("\n\tTaking Picture! (At: {})".format(datetime.now()))
                         print("\t[NEW] x:{}, y:{}, h:{}, l:{}, area:{}".format(x, y, w, h, w*h))
 
@@ -123,5 +218,5 @@ if __name__ == '__main__':
         if waitKey(1) & 0xFF == ord("q"):
             break
 
-    stream.release()
-    destroyAllWindows()
+    # stream.release()
+    # destroyAllWindows()

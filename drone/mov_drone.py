@@ -62,16 +62,16 @@ def decola():
 
 
 
-drone = Tello("TELLO-C7AC08", test_mode=False)
+# drone = Tello("TELLO-C7AC08", test_mode=False)
 #drone = Tello("TELLO-D023AE", test_mode=False)
-drone.inicia_cmds()
+# drone.inicia_cmds()
 
 # Set timeout drone init
-sleep(5)
+# sleep(5)
 #decola()
 
-while True:
-    imagem = drone.current_image
-    cv2.imshow("test", imagem)
-    if waitKey(1) & 0xFF == ord("q"):
-            break
+# while True:
+#     imagem = drone.current_image
+#     cv2.imshow("test", imagem)
+#     if waitKey(1) & 0xFF == ord("q"):
+#             break
