@@ -12,3 +12,19 @@ hr {
   border: 4px solid black;
   border-radius: 5px;
 }
+
+.transparent-button {
+  background-color: Transparent;
+}
+
+.round-button {
+  display:block;
+  height: 40px;
+  width: 40px;
+  border-radius: 50%;
+  border: 1px solid white;
+}
+
+.white-icon {
+  color: white;
+}

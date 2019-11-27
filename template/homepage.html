@@ -4,6 +4,7 @@
 <head>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
   <link rel="stylesheet" href="https://unpkg.com/tachyons@4.10.0/css/tachyons.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 
 <body class="sans-serif">
@@ -21,7 +22,16 @@
   <div class="vh-100 dt w-100 bg-moon-gray">
     <div class="dtc tc fw2 white-90 ph3 ph4-l vh-100">
       <div class="pa4">
-        <p class="f1-l tl">Estante</p>
+        <div class="flex flex-row">
+          <div class="flex w-80">
+            <p class="f1-l">Estante</p>
+          </div>
+          <div class="flex w-20">
+            <form action="/forward/" method="post">
+              <button name="forwardBtn" type="submit" class="btn round-button transparent-button"><i class="fa fa-refresh white-icon"></i></button>
+            </form>
+          </div>
+        </div>
         <div class="flex-row flex pt3 vh-75">
           <div class="flex w-30">
             <div class="fl ma5">

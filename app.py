@@ -39,6 +39,13 @@ def hello_world():
   SVG_Package = './static/box_package_color_qrcode_f.svg'
   return render_template('homepage.html', SVG_EmptyShelf=SVG_EmptyShelf, SVG_Package=SVG_Package)
 
+@app.route("/forward/", methods=['POST'])
+def move_forward():
+    #Moving forward code
+    forward_message = "Moving Forward..."
+    print(forward_message)
+    return (''), 204
+
 @app.route('/add_package/<int:package_id>/<string:date>')
 def add_package(package_id, date):
     # Note: data must be in the format: YYYY-MM-DD
