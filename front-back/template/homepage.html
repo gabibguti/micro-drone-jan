@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/tachyons@4.10.0/css/tachyons.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body class="sans-serif">
+  <header>
+    <div class="cover bg-left bg-center-l"
+      style="background-image: url(https://www.conceptstorage.com/media/zoo/images/increase-warehouse-storage-capacity_4a32e3cb56b8fbced289eb2b9420edc3.jpg)">
+      <div class="bg-black-50 vh-100">
+        <div class="tc-l ph3">
+          <p class="f1 fw3 white-90 mb0 lh-title pt6">Armazenamento Inteligente</p>
+          <p class="fw1 f2 white-80 mt3 mb4">Identificação automática de TAGs por Drone</p>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div class="vh-100 dt w-100 bg-moon-gray">
+    <div class="dtc tc fw2 white-90 ph3 ph4-l vh-100">
+      <div class="pa4">
+        <div class="flex flex-row">
+          <div class="flex w-80">
+            <p class="f1-l">Estante</p>
+          </div>
+          <div class="flex w-20">
+            <form action="/refresh_shelf/" method="post">
+              <button name="forwardBtn" type="submit" class="btn round-button transparent-button"><i
+                  class="fa fa-refresh white-icon"></i></button>
+            </form>
+          </div>
+        </div>
+        <div class="flex-row flex pt3 vh-75">
+          <div class="flex w-30">
+            <div class="fl ma5">
+              <div class="flex-column flex">
+                <div class="flex fw4 f3">ESPAÇO DE ESTOQUE: {{DATA_Shelf.total}}</div>
+                <div class="flex fw4 f3 pt3">No. PACOTES: {{DATA_Shelf.busy}}</div>
+                <div class="flex fw4 f3 pt3">No. ESPAÇOS LIVRES: {{DATA_Shelf.free}}</div>
+              </div>
+            </div>
+          </div>
+          <div class="flex w-70">
+            <div class="">
+              <span>
+                <div class="flex-column flex">
+                  {% for row in range(0, 2) %}
+                  <div class="flex">
+                    <div class="flex-row flex w-100 pl5 pr5 pt3">
+                      {% for col in range(0, 5) %}
+                      <div class="fl w-20 pa3">
+                        {% if DATA_Packages[row][col] %}
+                        <a href="/package_details/{{DATA_Packages[row][col]}}">
+                          <img src={{SVG_Package}} class="h-auto" />
+                        </a>
+                        {% endif %}
+                        {% if not DATA_Packages[row][col] %}
+                        <img src={{SVG_Package}} class="h-auto opacity-two" />
+                        {% endif %}
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  <hr>
+                  {% endfor %}
+                </div>
+              </span>
+
+            </div>
+          </div>
+          <!-- <img src={{SVG_Package}} class="h-20" /> -->
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="vh-100 dt w-100 bg-gray">
+    <div class="dtc tc fw2 white-90 ph3 ph4-l vh-100">
+      <div class="pa4">
+        <p class="f1-l tl">Pacote</p>
+        <div class="flex-row flex pt3">
+          <div class="flex w-40">
+            <div class="pa6">
+              <img src={{SVG_Package}} class="w-100 h-100" />
+            </div>
+          </div>
+          <div class="flex w-60 items-center">
+            <div class="flex-column flex">
+              {% if CURR_Package %}
+              <div class="flex fw4 f3">ID #{{CURR_Package.id}}</div>
+              <div class="flex fw4 f3 pt3">DATA DE ENTREGA: {{CURR_Package.date}}</div>
+              <div class="flex fw4 f3 pt3">STATUS: {{CURR_Package.status}}</div>
+              {% endif %}
+              {% if not CURR_Package %}
+              <div class="flex fw3 f1 opacity-seven">Nenhum pacote selecionado...</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
