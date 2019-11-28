@@ -106,6 +106,14 @@ def get_all_packages():
 @app.route('/add_package/<int:package_id>/<string:date>/<int:row>/<int:col>')
 def add_package(package_id, date, row, col):
     # Note: data must be in the format: YYYY-MM-DD
+
+    package = list(collection.find({"id": package_id}))
+    if(len(package) != 0):
+      return "Package already exists"
+    package = list(collection.find({"row": row, "col": col}))
+    if(len(package) != 0 or row not in range(0, 2) or col not in range(0, 5)):
+      return "Space not avaiable in shelf"
+
     dt = date.split('-')
     year = int(dt[0])
     month = int(dt[1])
