@@ -29,6 +29,14 @@ hr {
   color: white;
 }
 
-.opacity-on {
+.opacity-two {
   opacity: 0.2;
+}
+
+.opacity-seven {
+  opacity: 0.7;
+}
+
+.btn:focus {
+  outline: none;
 }

@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-<meta http-equiv="refresh" content="5">
 
 <head>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
@@ -38,9 +37,9 @@
           <div class="flex w-30">
             <div class="fl ma5">
               <div class="flex-column flex">
-                <div class="flex fw4 f3">ESPAÇO DE ESTOQUE: 10</div>
-                <div class="flex fw4 f3 pt3">No. PACOTES: 2</div>
-                <div class="flex fw4 f3 pt3">No. ESPAÇOS LIVRES: 2</div>
+                <div class="flex fw4 f3">ESPAÇO DE ESTOQUE: {{DATA_Shelf.total}}</div>
+                <div class="flex fw4 f3 pt3">No. PACOTES: {{DATA_Shelf.busy}}</div>
+                <div class="flex fw4 f3 pt3">No. ESPAÇOS LIVRES: {{DATA_Shelf.free}}</div>
               </div>
             </div>
           </div>
@@ -53,12 +52,13 @@
                     <div class="flex-row flex w-100 pl5 pr5 pt3">
                       {% for col in range(0, 5) %}
                       <div class="fl w-20 pa3">
-                        <p>#{{DATA_Packages[row][col]}}</p>
                         {% if DATA_Packages[row][col] %}
-                        <img src={{SVG_Package}} class="h-auto" />
+                        <a href="/package_details/{{DATA_Packages[row][col]}}">
+                          <img src={{SVG_Package}} class="h-auto" />
+                        </a>
                         {% endif %}
                         {% if not DATA_Packages[row][col] %}
-                        <img src={{SVG_Package}} class="h-auto opacity-on" />
+                        <img src={{SVG_Package}} class="h-auto opacity-two" />
                         {% endif %}
                       </div>
                       {% endfor %}
@@ -86,14 +86,16 @@
               <img src={{SVG_Package}} class="w-100 h-100" />
             </div>
           </div>
-          <div class="flex w-60">
-            <div class="fl pa6">
-              <div class="flex-column flex">
-                <div class="flex fw4 f3">ID #578492</div>
-                <div class="flex fw4 f3 pt3">TAG: BgflBYk673n7DB</div>
-                <div class="flex fw4 f3 pt3">DATA DE ENTREGA: 13/11/2019</div>
-                <div class="flex fw4 f3 pt3">STATUS: OK</div>
-              </div>
+          <div class="flex w-60 items-center">
+            <div class="flex-column flex">
+              {% if CURR_Package %}
+              <div class="flex fw4 f3">ID #{{CURR_Package.id}}</div>
+              <div class="flex fw4 f3 pt3">DATA DE ENTREGA: {{CURR_Package.date}}</div>
+              <div class="flex fw4 f3 pt3">STATUS: {{CURR_Package.status}}</div>
+              {% endif %}
+              {% if not CURR_Package %}
+              <div class="flex fw3 f1 opacity-seven">Nenhum pacote selecionado...</div>
+              {% endif %}
             </div>
           </div>
         </div>

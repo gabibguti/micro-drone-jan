@@ -1,10 +1,11 @@
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, redirect, url_for
 from pymongo import MongoClient
 from datetime import datetime
 import json
 
 app = Flask(__name__, template_folder='template', static_folder='static')
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 client = MongoClient("localhost", 27017)
 db = client["smart_warehouse"]
@@ -41,34 +42,59 @@ def init_packages():
   for row in range(0, 2):
     data[row] = {}
     for col in range(0, 5):
-      data[row][col] = False
+      data[row][col] = None
   return data
 
+def init_shelf():
+  return {
+      "total": 10,
+      "busy": 0,
+      "free": 10
+    }
+
+DATA_Shelf = init_shelf()
 DATA_Packages = init_packages()
+CURR_Package = None
+SVG_EmptyShelf = './static/shelves.svg'
+SVG_Package = './static/box_package_color_qrcode_f.svg'
 
 @app.route('/')
 def hello_world():
-  print('##', DATA_Packages)
-  SVG_EmptyShelf = './static/shelves.svg'
-  SVG_Package = './static/box_package_color_qrcode_f.svg'
+  global DATA_Packages
   return render_template('homepage.html',
   SVG_EmptyShelf=SVG_EmptyShelf,
   SVG_Package=SVG_Package,
-  DATA_Packages=DATA_Packages)
+  DATA_Packages=DATA_Packages,
+  CURR_Package=CURR_Package,
+  DATA_Shelf=DATA_Shelf)
 
 @app.route("/refresh_shelf/", methods=['POST'])
 def refresh_shelf():
-    global DATA_Packages
-    print("\n\n***\n")
-    print("Refreshing shelf...")
+    global DATA_Packages, DATA_Shelf
+    # Fetch packages
     raw_data = get_all_packages()
     data = json.loads(raw_data)
+    # Set new packages data
     DATA_Packages = init_packages()
     for pkg in data:
-      DATA_Packages[pkg["row"]][pkg["col"]] = True
-    print(DATA_Packages)
-    print("\n***\n\n")
-    return (''), 204
+      DATA_Packages[pkg["row"]][pkg["col"]] = pkg["id"]
+    DATA_Shelf = {
+      "total": 10,
+      "busy": len(data),
+      "free": 10 - len(data)
+    }
+    # Reload page
+    return redirect(url_for('hello_world'))
+
+@app.route("/package_details/<int:id>")
+def get_package_details(id):
+  global CURR_Package
+  raw_data = get_package(id)
+  data = json.loads(raw_data)
+
+  CURR_Package=data
+  # Reload page
+  return redirect(url_for('hello_world'))
 
 @app.route('/all_packages')
 def get_all_packages():
@@ -97,8 +123,8 @@ def add_package(package_id, date, row, col):
     collection.insert(package)
     return 'Package info added to database'
 
-@app.route('/package_status/<int:package_id>')
-def package_status(package_id):
+@app.route('/package/<int:package_id>')
+def get_package(package_id):
     query = {"id": package_id}
     package = collection.find_one(query)
     package.pop("_id", None)
@@ -122,5 +148,5 @@ def get_delayed_package():
     return json.dumps(delayed_packages)
 
 if __name__ == '__main__':
-    app.run(host='localhost', port=5000, debug=False)
+    app.run(host='localhost', port=5000, debug=True)
 
