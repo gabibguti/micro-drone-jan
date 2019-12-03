@@ -24,24 +24,28 @@ def dentroRegiao(img, xRef, yRef, wRef, hRef):
     return False
 
 def movEsq(xRef, xReg):
-    while xReg > xRef:
-        drone.rc(10, 0, 0, 0)
-    drone.rc(0, 0, 0, 0)
+    xDist = (xReg-xRef)*4/3
+    drone.goto(int(xDist),0,0,10)
 
-def movDir(xLim, xRegLim):
-    while xLim > xRegLim:
-        drone.rc(-10, 0, 0, 0)
-    drone.rc(0, 0, 0, 0)
+def movHoriz(xRef, xReg):
+    xDist = (xReg-xRef)*4/3
+    drone.goto(int(xDist),0,0,10)
 
-def movCima(yLim, yRegLim):
-    while yLim > yRegLim:
-        drone.rc(0, 0, 10, 0)
-    drone.rc(0, 0, 0, 0)
+def movDir(xRef, xReg):
+    xDist = (xRef - xReg)*4/3
+    drone.goto(int(-xDist),0,0,10)
 
-def movBaixo(yRef, yReg):
-    while yRef > yReg:
-        drone.rc(0, 0, -10, 0)
-    drone.rc(0, 0, 0, 0)
+def movBaixo(yLim, yRegLim):
+    zDist = (yLim - yRegLim)*4/3
+    drone.goto(0, 0, int(-zDist), 10)
+
+def movCima(yRef, yReg):
+    zDist = (yReg-yRef)*4/3
+    drone.goto(0, 0, int(zDist), 10)
+
+def movVert(yRef, yReg):
+    zDist = (yReg-yRef)*4/3
+    drone.goto(0, 0, int(zDist), 10)
 
 def decola():
     a=7

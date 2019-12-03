@@ -29,34 +29,37 @@ def dentroRegiao(img, xRef, yRef, wRef, hRef):
     return False
 
 
-def movEsq(xRef, xReg):
-    while xReg > xRef:
-        drone.rc(10, 0, 0, 0)
-    drone.rc(0, 0, 0, 0)
 
+def movHoriz(xRef, xReg):
+    xDist = (xReg-xRef)*4/3
+    drone.goto(int(xDist),0,0,10)
+    sleep(5)
 
-def movDir(xLim, xRegLim):
-    while xLim > xRegLim:
-        drone.rc(-10, 0, 0, 0)
-    drone.rc(0, 0, 0, 0)
+def movVert(yRef, yReg):
+    zDist = (yReg-yRef)*4/3
+    drone.goto(0, 0, int(zDist), 10)
+    sleep(5)
 
-
-def movCima(yLim, yRegLim):
-    while yLim > yRegLim:
-        drone.rc(0, 0, 10, 0)
-    drone.rc(0, 0, 0, 0)
-
-
-def movBaixo(yRef, yReg):
-    while yRef > yReg:
-        drone.rc(0, 0, -10, 0)
-    drone.rc(0, 0, 0, 0)
+def centralizaDrone(img, xRef, yRef, wRef, hRef):
+    xMid = int(img.shape[1] / 2)
+    yMid = int(img.shape[0] / 2)
+    xReg = (xMid - wRef/2)
+    yReg = (yMid - hRef/2)
+    xDif = int((xReg - xRef)/10)
+    yDif = int((yReg - yRef)/10)
+    print("\t[DIF] xDif:{}, yDif:{}".format(xDif, yDif))
+    if (xDif > 5) or (xDif < -5):
+        movHoriz(xRef, xReg)
+    #if yDif != 0:
+    #    movVert(yRef, yReg)
+    print("test")
+    isAdjusting = False
 
 
 def decola():
     a = 7
     drone.takeoff()
-
+    sleep(5)
     # sleep(a)
     #mov_dronee(0, -30, 0, 100)  # direita olhando de tras
     # drone.rc(10, 0, 0, 0)
@@ -131,6 +134,7 @@ if __name__ == '__main__':
     last_detect = datetime.now()
     detection_tolerance = timedelta(seconds=5)
     area_limit = 6000
+    isAdjusting = False
 
     # Drone Vars
     drone_x = 10
@@ -144,8 +148,10 @@ if __name__ == '__main__':
     drone.inicia_cmds()
     # Set timeout drone init
     sleep(5)
-    # decola()
+    #decola()
     first = True
+    drone.takeoff()
+    sleep(5)
 
     while True:
         imagem = drone.current_image
@@ -193,6 +199,10 @@ if __name__ == '__main__':
                         drone.rc(0, 0, 0, 0)
                         print("\n\tTaking Picture! (At: {})".format(datetime.now()))
                         print("\t[NEW] x:{}, y:{}, h:{}, l:{}, area:{}".format(x, y, w, h, w*h))
+                        print(str(isAdjusting))
+                        if isAdjusting == False:
+                            isAdjusting = True
+                            centralizaDrone(imagem, x, y, w, h)
 
                         # TODO: Decidir formato que arquivo deve ser salvo ex: '{X1}_{Y1}_{X2}_{Y2}_{DATA/HORA}.png'
                         # Take picture and save it
