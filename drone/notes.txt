@@ -1,0 +1,14 @@
+
+# [NOTE] Drone:
+    # drone.goto(0,0,0,0)
+    # drone.goto(60,0,0,10) # anda +/- 45cm (relação de 3/4) para frente, vel = 10
+    # Distancia máxima que o drone pode se aproximar da estante == 10cm ->
+        # drone.goto(13,0,0,10) # pra frente
+        # drone.goto(-13,0,0,10) # pra tras
+
+
+# Docker:
+## MongoDB:
+       $ docker pull mongo
+       $ docker run --rm --name my-mongo -it -p 27017:27017 mongo:latest
+

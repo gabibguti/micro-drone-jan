@@ -46,7 +46,7 @@ def movBaixo(yRef, yReg):
 def decola():
     a=7
     drone.takeoff()
-    
+
     sleep(a)
     mov_dronee(0,-30,0,100)#direita olhando de tras
              
@@ -62,16 +62,40 @@ def decola():
 
 
 
-# drone = Tello("TELLO-C7AC08", test_mode=False)
-#drone = Tello("TELLO-D023AE", test_mode=False)
-# drone.inicia_cmds()
+drone = Tello("TELLO-C7AC08", test_mode=False)
+# drone = Tello("TELLO-D023AE", test_mode=False)
+drone.inicia_cmds()
 
 # Set timeout drone init
-# sleep(5)
-#decola()
+# s = 7
+# sleep(s)
+# drone.takeoff()
+# sleep(s)
+# drone.rc(0,10,0,0)
+# sleep(s)
+# drone.rc(0,-10,0,0)
+# sleep(s)
+# drone.rc(0,0,0,0)
+# sleep(s)
+# drone.land()
+
+s = 6
+sleep(s)
+drone.takeoff()
+sleep(s)
+drone.goto(0,0,0,10)
+sleep(s)
+drone.goto(60,0,0,10)
+sleep(s)
+# drone.rc(0,-10,0,0)
+# sleep(s)
+# drone.rc(0,0,0,0)
+# sleep(s)
+drone.land()
+
 
 # while True:
-#     imagem = drone.current_image
-#     cv2.imshow("test", imagem)
-#     if waitKey(1) & 0xFF == ord("q"):
-#             break
+    # imagem = drone.current_image
+    # cv2.imshow("test", imagem)
+    # if waitKey(1) & 0xFF == ord("q"):
+    #         break
