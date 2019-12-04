@@ -105,7 +105,7 @@ def was_picture_taken(x, xRef, y, yRef, xTol):
 curr_dir = os.getcwd()
 pics_dir = os.path.join(curr_dir, "tag-pics")
 tag_counter = 0
-drone_interval = 5
+drone_interval = 7
 
 if __name__ == '__main__':
 
@@ -146,20 +146,33 @@ if __name__ == '__main__':
     last_mov = datetime.now()
     timer_drone = datetime.now()
     drone_tolerance = timedelta(seconds=3)
-    drone_end = datetime.now() + timedelta(seconds=180)
+    drone_end = datetime.now() + timedelta(seconds=50)
 
     drone = Tello("TELLO-C7AC08", test_mode=False)
     # drone = Tello("TELLO-D023AE", test_mode=False)
     drone.inicia_cmds()
+
     # Set timeout drone init
     sleep(drone_interval)
     #decola()
     first = True
-    drone.takeoff()
-    sleep(drone_interval)
+    # drone.takeoff()
+    # sleep(drone_interval)
+    last_command = datetime.now()
+    command_tolerance = timedelta(seconds=6)
+
 
     while True:
         imagem = drone.current_image
+
+        if last_command > datetime.now():
+            # envia bateria
+            status = drone.state
+        last_command = datetime.now() + command_tolerance  # starts timer
+
+        # if datetime.now() > drone_end:
+        #     drone.land()
+        #     break
 
         # if last_mov > datetime.now() or first:
         #     #drone.rc(drone_x,0,0,0)
@@ -199,7 +212,7 @@ if __name__ == '__main__':
                     if was_picture_taken(x, xRef, y, yRef, xTol):
                         if isAdjusting == False:
                             isAdjusting = True
-                            centralizaDrone(imagem, x, y, w, h)
+                            # centralizaDrone(imagem, x, y, w, h)
 
                     xRef = x
                     yRef = y
