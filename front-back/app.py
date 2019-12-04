@@ -17,6 +17,8 @@ collection = db["packages"]
 #     "id": <int>
 #     "date": <str: YYYY-MM-DD>
 #     "status": ["delayed", "ok"]
+#     "row": <int>
+#     "col": <int>
 # }
 
 def update_all():
