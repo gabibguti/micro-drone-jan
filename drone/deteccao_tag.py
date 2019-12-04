@@ -5,6 +5,7 @@ import os
 from extra.tello import Tello
 from time import sleep
 from threading import Timer
+from threading import Thread
 
 def para():
     drone.land()
@@ -82,7 +83,7 @@ def delete_picture_files():
     for tag_picture in os.listdir(pics_dir):
         os.remove(os.path.join(pics_dir,tag_picture))
 
-def was_picture_taken(x, xRef, y, yRef, xTol):
+def was_picture_taken(img, x, xRef, y, yRef, xTol, w, h):
     global tag_counter
 
     # FIXME: Por enquanto, basta obter novos valores para as posições X e Y diferentes dos últimos \
@@ -97,15 +98,79 @@ def was_picture_taken(x, xRef, y, yRef, xTol):
         # Take picture and save it
         tag_picture = os.path.join(pics_dir, "tag" + str(tag_counter + 1) + ".png")
         if not os.path.exists(tag_picture):
-            imwrite(tag_picture, imagem)
+            imwrite(tag_picture, img)
             tag_counter += 1
         return True
     return False
 
+def threaded_function(arg, arg2):
+    global imagem
+    global final_img
+    xRef = 0
+    yRef = 0
+    wRef = 0
+    hRef = 0
+
+    # TODO: Ajustar valores de tolerância (depende do tamanho da nossa área azul a ser capturada, a que distância elas \
+    #  serão capturadas, espaçamento entre cada quadrado azul na prateleira)
+    xTol = 125
+    yTol = 75
+
+    # TODO: ajustar intervalo de tolerancia entre cada detecção
+    last_detect = datetime.now()
+    detection_tolerance = timedelta(seconds=5)
+    area_limit = 6000
+
+    while True:
+        # Parte 1
+        imagem_hsv = cvtColor(imagem, COLOR_BGR2HSV)
+        mascara = inRange(imagem_hsv, light_blue, dark_blue)
+        imagem1 = bitwise_and(imagem, imagem, mask=mascara)
+
+        # Parte 2
+        mascara2 = bitwise_not(mascara)
+        graybgr = cvtColor(imagem, COLOR_BGR2GRAY)
+        graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
+        imagem2 = bitwise_and(graybgr, graybgr, mask=mascara2)
+
+        # Parte 3
+        blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
+
+        # FIXME: Versoes diferentes do OpenCV podem causar problemas aqui na "findContours" (nesse caso foi utilizada a versão 3)
+        contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
+        area = 0
+        for contorno in contornos:
+            peri = arcLength(contorno, True)
+            approx = approxPolyDP(contorno, 0.04 * peri, True)
+            # if the shape has 4 vertices, it is either a square or a rectangle
+            if len(approx) == 4:
+                # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
+                (x, y, w, h) = boundingRect(approx)
+                # TODO: Ajustar valor de "area_limit"
+                if is_square(w, h) and w * h > area_limit and w * h > area:
+                    was_picture_taken(blue_img, x, xRef, y, yRef, xTol, w, h)
+                    xRef = x
+                    yRef = y
+                    wRef = w
+                    hRef = h
+                    area = w * h
+                    last_detect = datetime.now() + detection_tolerance  # starts timer
+
+        if last_detect > datetime.now():
+            rectangle(blue_img, pt1=(xRef, yRef), pt2=(xRef + wRef, yRef + hRef), color=(0, 255, 0), thickness=3)
+
+        final_img = blue_img
+        if kill_thread:
+            break
+    print("Thread died")
+
+
 curr_dir = os.getcwd()
 pics_dir = os.path.join(curr_dir, "tag-pics")
 tag_counter = 0
-drone_interval = 7
+drone_interval = 6
+
+kill_thread = False
 
 if __name__ == '__main__':
 
@@ -149,18 +214,23 @@ if __name__ == '__main__':
     drone_end = datetime.now() + timedelta(seconds=50)
 
     drone = Tello("TELLO-C7AC08", test_mode=False)
-    # drone = Tello("TELLO-D023AE", test_mode=False)
     drone.inicia_cmds()
 
     # Set timeout drone init
     sleep(drone_interval)
     #decola()
-    first = True
+
+    # Take off
     # drone.takeoff()
     # sleep(drone_interval)
     last_command = datetime.now()
     command_tolerance = timedelta(seconds=6)
 
+    # First capture to initialize thread
+    imagem = drone.current_image
+    final_img = imagem.copy()
+    # thread = Thread(target=threaded_function, args=(5, 2,))
+    # thread.start()
 
     while True:
         imagem = drone.current_image
@@ -170,65 +240,11 @@ if __name__ == '__main__':
             status = drone.state
         last_command = datetime.now() + command_tolerance  # starts timer
 
-        # if datetime.now() > drone_end:
-        #     drone.land()
-        #     break
-
-        # if last_mov > datetime.now() or first:
-        #     #drone.rc(drone_x,0,0,0)
-        #     drone_x = -drone_x
-        #     last_mov = datetime.now() + drone_tolerance  # starts timer
-        #     first = False
-        #     if last_mov > drone_end: #finish
-        #         drone.land()
-        #         break
-
-        # Parte 1
-        imagem_hsv = cvtColor(imagem, COLOR_BGR2HSV)
-        mascara = inRange(imagem_hsv, light_blue, dark_blue)
-        imagem1 = bitwise_and(imagem, imagem, mask=mascara)
-
-        # Parte 2
-        mascara2 = bitwise_not(mascara)
-        graybgr = cvtColor(imagem, COLOR_BGR2GRAY)
-        graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
-        imagem2 = bitwise_and(graybgr, graybgr, mask=mascara2)
-
-        # Parte 3
-        blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
-
-        # FIXME: Versoes diferentes do OpenCV podem causar problemas aqui na "findContours" (nesse caso foi utilizada a versão 3)
-        contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
-        area = 0
-        for contorno in contornos:
-            peri = arcLength(contorno, True)
-            approx = approxPolyDP(contorno, 0.04 * peri, True)
-            # if the shape has 4 vertices, it is either a square or a rectangle
-            if len(approx) == 4:
-                # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
-                (x, y, w, h) = boundingRect(approx)
-                # TODO: Ajustar valor de "area_limit"
-                if is_square(w, h) and w*h > area_limit and w*h > area:
-                    if was_picture_taken(x, xRef, y, yRef, xTol):
-                        if isAdjusting == False:
-                            isAdjusting = True
-                            # centralizaDrone(imagem, x, y, w, h)
-
-                    xRef = x
-                    yRef = y
-                    wRef = w
-                    hRef = h
-                    area = w*h
-                    # print("\t[REF] x:{}, y:{}, h:{}, l:{}, area:{}\n".format(xRef, yRef, wRef, hRef, area))
-                    last_detect = datetime.now() + detection_tolerance # starts timer
-
-        if last_detect > datetime.now():
-            rectangle(blue_img, pt1=(xRef, yRef), pt2=(xRef + wRef, yRef + hRef), color=(0, 255, 0), thickness=3)
-        imshow("Minha Janela", blue_img)
-
+        imshow("Minha Janela", final_img)
+        imshow("Original", imagem)
         # Mostra a imagem durante 1 milissegundo e interrompe loop quando tecla q for pressionada
         if waitKey(1) & 0xFF == ord("q"):
             break
 
-    # stream.release()
-    # destroyAllWindows()
+    kill_thread = True
+    # thread.join()
