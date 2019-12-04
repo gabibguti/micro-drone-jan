@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 
+<script>
+  function setLoading() {
+    document.getElementById("loading-icon").classList.add('fa-spin');
+  }
+</script>
+
 <body class="sans-serif">
   <header>
     <div class="cover bg-left bg-center-l"
@@ -28,8 +34,10 @@
           </div>
           <div class="flex w-20">
             <form action="/refresh_shelf/" method="post">
-              <button name="forwardBtn" type="submit" class="btn round-button transparent-button"><i
-                  class="fa fa-refresh white-icon"></i></button>
+              <button name="forwardBtn" type="submit" class="btn round-button transparent-button"
+                onclick="setLoading()">
+                <i id="loading-icon" class="fa fa-refresh white-icon"></i>
+              </button>
             </form>
           </div>
         </div>
@@ -50,7 +58,7 @@
                   {% for row in range(0, 2) %}
                   <div class="flex">
                     <div class="flex-row flex w-100 pl5 pr5 pt3">
-                      {% for col in range(0, 5) %}
+                      {% for col in range(0, 3) %}
                       <div class="fl w-20 pa3">
                         {% if DATA_Packages[row][col] %}
                         <a href="/package_details/{{DATA_Packages[row][col]}}">

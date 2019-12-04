@@ -3,45 +3,27 @@ from flask import Flask, render_template, jsonify, redirect, url_for
 from pymongo import MongoClient
 from datetime import datetime
 import json
+from time import sleep
+# from fita_leds.controle_fita_LED import start_leds, end_leds, apagar_leds
+import sys
+sys.path.insert(0, '../fita_leds/')
+import controle_fita_LED
 
+# Interface settings
 app = Flask(__name__, template_folder='template', static_folder='static')
-app.config['TEMPLATES_AUTO_RELOAD'] = True
 
+# Database settings
 client = MongoClient("localhost", 27017)
 db = client["smart_warehouse"]
 collection = db["packages"]
 
-# TODO add more status about the package
-# package:
-# {
-#     "id": <int>
-#     "date": <str: YYYY-MM-DD>
-#     "status": ["delayed", "ok"]
-# }
-
-def update_all():
-    # Update and get all packages
-    packages = list(collection.find())
-    for package in packages:
-        new_status = check_status(package["date"])
-        if new_status != package["status"]:
-            package["status"] = new_status
-            # TODO use pymongo $set to update values, instead of adding new ones
-            # db.update({"_id": package_id}, {"$set": package })
-            collection.insert(package)
-
-def check_status(dt):
-    date = datetime.strptime(dt, "%Y-%m-%d")
-    return "okay" if date > datetime.now() else "delayed"
-
-def clear_db():
-  collection.remove({})
+# Interface Functions/Routes
 
 def init_packages():
   data = {}
   for row in range(0, 2):
     data[row] = {}
-    for col in range(0, 5):
+    for col in range(0, 3):
       data[row][col] = None
   return data
 
@@ -71,13 +53,18 @@ def hello_world():
 @app.route("/refresh_shelf/", methods=['POST'])
 def refresh_shelf():
     global DATA_Packages, DATA_Shelf
+    sleep(3)
     # Fetch packages
     raw_data = get_all_packages()
     data = json.loads(raw_data)
     # Set new packages data
     DATA_Packages = init_packages()
+    controle_fita_LED.apagar_leds() # apagar leds
+    sleep(3) # wait
     for pkg in data:
       DATA_Packages[pkg["row"]][pkg["col"]] = pkg["id"]
+      controle_fita_LED.novo_leds(pkg["status"], pkg["col"]) # new pkg
+      sleep(3) # wait
     DATA_Shelf = {
       "total": 10,
       "busy": len(data),
@@ -95,6 +82,33 @@ def get_package_details(id):
   CURR_Package=data
   # Reload page
   return redirect(url_for('hello_world'))
+
+
+# Server Functions/Routes
+# TODO add more status about the package 
+# package:
+# {
+#     "id": <int>
+#     "date": <str: YYYY-MM-DD>
+#     "status": ["delayed", "okay"]
+#     "row": <int>
+#     "col": <int>
+# }
+
+def update_all():
+    # Update and get all packages
+    packages = list(collection.find())
+    for package in packages:
+        new_status = check_status(package["date"])
+        if new_status != package["status"]:
+            package["status"] = new_status
+            # TODO use pymongo $set to update values, instead of adding new ones
+            # db.update({"_id": package_id}, {"$set": package })
+            collection.insert(package)
+
+def check_status(dt):
+    date = datetime.strptime(dt, "%Y-%m-%d")
+    return "okay" if date > datetime.now() else "delayed"
 
 @app.route('/all_packages')
 def get_all_packages():
@@ -155,6 +169,13 @@ def get_delayed_package():
       pkg.pop("_id", None)
     return json.dumps(delayed_packages)
 
+@app.route('/clear_data')
+def clear_database():
+    collection.remove({})
+    return 'Base de dados resetada!'
+
+# Run App
 if __name__ == '__main__':
+    controle_fita_LED.start_leds()
     app.run(host='localhost', port=5000, debug=True)
 
