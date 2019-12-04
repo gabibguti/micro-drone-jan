@@ -9,10 +9,8 @@ from threading import Timer
 def para():
     drone.land()
 
-
 def mov_dronee(x, y, z, w):
     drone.goto(int(x), int(y), int(z), int(w))
-
 
 def dentroRegiao(img, xRef, yRef, wRef, hRef):
     wReg = int(img.shape[0] * 2 / 3)
@@ -27,7 +25,6 @@ def dentroRegiao(img, xRef, yRef, wRef, hRef):
             if (yReg + hReg) > (yRef + hRef):
                 return True
     return False
-
 
 
 def movHoriz(xRef, xReg):
@@ -60,19 +57,6 @@ def decola():
     a = 7
     drone.takeoff()
     sleep(5)
-    # sleep(a)
-    #mov_dronee(0, -30, 0, 100)  # direita olhando de tras
-    # drone.rc(10, 0, 0, 0)
-    # sleep(a)
-    #mov_dronee(0, 0, -20, 100)  # desce
-
-    #sleep(a)
-    #mov_dronee(0, 30, 0, 100)  # esquerda
-    #sleep(a)
-    #print("[INFO] Drone pronto")
-
-    # drone.land()  # pousa
-
 
 def is_square(w, h):
     # A square will have an aspect ratio that is approximately equal to one, otherwise, the shape is a rectangle
@@ -93,8 +77,31 @@ def delete_picture_files():
     for tag_picture in os.listdir(pics_dir):
         os.remove(os.path.join(pics_dir,tag_picture))
 
+def was_picture_taken(x, xRef, y, yRef, xTol):
+    global tag_counter
+
+    # FIXME: Por enquanto, basta obter novos valores para as posições X e Y diferentes dos últimos \
+    #  valores de Referência, para capturar uma nova foto, talvez pudessemos otimizar isso \
+    #  utilizando uma contagem de tempo desde de a última vez que uma foto foi tirada
+    if is_new_square(x, xRef, y, yRef, xTol):
+        # drone.rc(0, 0, 0, 0)
+        print("\n\tTaking Picture! (At: {})".format(datetime.now()))
+        print("\t[NEW] x:{}, y:{}, h:{}, l:{}, area:{}".format(x, y, w, h, w * h))
+        print("\t[IMG] tam_x:{}, tam_y:{}, img:{}".format(imagem.shape[1], imagem.shape[0], imagem.shape))
+        print("\n\t\t\t[COUNTER] ", tag_counter)
+
+        # TODO: Decidir formato que arquivo deve ser salvo ex: '{X1}_{Y1}_{X2}_{Y2}_{DATA/HORA}.png'
+        # Take picture and save it
+        tag_picture = os.path.join(pics_dir, "tag" + str(tag_counter + 1) + ".png")
+        if not os.path.exists(tag_picture):
+            imwrite(tag_picture, imagem)
+            tag_counter += 1
+        return True
+    return False
+
 curr_dir = os.getcwd()
 pics_dir = os.path.join(curr_dir, "tag-pics")
+tag_counter = 0
 
 if __name__ == '__main__':
 
@@ -111,8 +118,6 @@ if __name__ == '__main__':
     wRef = 0
     hRef = 0
 
-    tag_counter = 0
-
     # Asserts or creates directory where tags pictures will be storage
     if not os.path.exists(pics_dir):
         os.makedirs(pics_dir)
@@ -120,10 +125,6 @@ if __name__ == '__main__':
         # TODO: Delete all files boefore a new session or just for test purposes
         delete_picture_files()
 
-
-    # TODO: Decidir se há necessidade de capturar mais de uma tag por vez
-    # List used to keep last N captured squares
-    # tags_lst = list()
 
     # TODO: Ajustar valores de tolerância (depende do tamanho da nossa área azul a ser capturada, a que distância elas \
     #  serão capturadas, espaçamento entre cada quadrado azul na prateleira)
@@ -147,11 +148,11 @@ if __name__ == '__main__':
     # drone = Tello("TELLO-D023AE", test_mode=False)
     drone.inicia_cmds()
     # Set timeout drone init
-    sleep(5)
+    sleep(7)
     #decola()
     first = True
     drone.takeoff()
-    sleep(5)
+    sleep(7)
 
     while True:
         imagem = drone.current_image
@@ -191,32 +192,13 @@ if __name__ == '__main__':
                 (x, y, w, h) = boundingRect(approx)
                 # TODO: Ajustar valor de "area_limit"
                 if is_square(w, h) and w*h > area_limit and w*h > area:
-
-                    # FIXME: Por enquanto, basta obter novos valores para as posições X e Y diferentes dos últimos \
-                    #  valores de Referência, para capturar uma nova foto, talvez pudessemos otimizar isso \
-                    #  utilizando uma contagem de tempo desde de a última vez que uma foto foi tirada
-                    if is_new_square(x, xRef, y, yRef, xTol):
-                        drone.rc(0, 0, 0, 0)
-                        print("\n\tTaking Picture! (At: {})".format(datetime.now()))
-                        print("\t[NEW] x:{}, y:{}, h:{}, l:{}, area:{}".format(x, y, w, h, w*h))
-                        print(str(isAdjusting))
-                        if isAdjusting == False:
-                            isAdjusting = True
-                            centralizaDrone(imagem, x, y, w, h)
-
-                        # TODO: Decidir formato que arquivo deve ser salvo ex: '{X1}_{Y1}_{X2}_{Y2}_{DATA/HORA}.png'
-                        # Take picture and save it
-                        tag_picture = os.path.join(pics_dir, "tag" + str(tag_counter+1) + ".png")
-                        if not os.path.exists(tag_picture):
-                            imwrite(tag_picture, imagem)
-                            tag_counter += 1
+                    # if was_picture_taken(x, xRef, y, yRef, xTol):
 
                     xRef = x
                     yRef = y
                     wRef = w
                     hRef = h
                     area = w*h
-                    # print("\n\t\t\t\t SQUARE")
                     # print("\t[REF] x:{}, y:{}, h:{}, l:{}, area:{}\n".format(xRef, yRef, wRef, hRef, area))
                     last_detect = datetime.now() + detection_tolerance # starts timer
 
