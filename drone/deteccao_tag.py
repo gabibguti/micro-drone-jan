@@ -29,24 +29,29 @@ def dentroRegiao(img, xRef, yRef, wRef, hRef):
 
 def movHoriz(xRef, xReg):
     xDist = (xReg-xRef)*4/3
-    drone.goto(int(xDist),0,0,10)
+    drone.goto(int(xDist)*10,0,0,10)
     sleep(5)
 
 def movVert(yRef, yReg):
     zDist = (yReg-yRef)*4/3
-    drone.goto(0, 0, int(zDist), 10)
+    drone.goto(0, 0, int(zDist)*10, 10)
     sleep(5)
 
 def centralizaDrone(img, xRef, yRef, wRef, hRef):
+    global isAdjusting
     xMid = int(img.shape[1] / 2)
     yMid = int(img.shape[0] / 2)
     xReg = (xMid - wRef/2)
     yReg = (yMid - hRef/2)
     xDif = int((xReg - xRef)/10)
     yDif = int((yReg - yRef)/10)
+    #drone.goto(0,0,0,10)
+    #sleep(5)
     print("\t[DIF] xDif:{}, yDif:{}".format(xDif, yDif))
-    if (xDif > 5) or (xDif < -5):
-        movHoriz(xRef, xReg)
+    #drone.goto(0,30,0,10)
+    #movHoriz(xRef, xReg)
+    #if (xDif > 5) or (xDif < -5):
+    #    movHoriz(xRef, xReg)
     #if yDif != 0:
     #    movVert(yRef, yReg)
     print("test")
@@ -142,7 +147,7 @@ if __name__ == '__main__':
     last_mov = datetime.now()
     timer_drone = datetime.now()
     drone_tolerance = timedelta(seconds=3)
-    drone_end = datetime.now() + timedelta(seconds=60)
+    drone_end = datetime.now() + timedelta(seconds=180)
 
     drone = Tello("TELLO-C7AC08", test_mode=False)
     # drone = Tello("TELLO-D023AE", test_mode=False)
@@ -158,7 +163,7 @@ if __name__ == '__main__':
         imagem = drone.current_image
 
         if last_mov > datetime.now() or first:
-            drone.rc(drone_x,0,0,0)
+            #drone.rc(drone_x,0,0,0)
             drone_x = -drone_x
             last_mov = datetime.now() + drone_tolerance  # starts timer
             first = False
