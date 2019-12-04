@@ -3,8 +3,9 @@
 #define LED_PIN     5
 #define NUM_LEDS    30
 #define BRIGHTNESS  64
+#define OFFSET 4
 #define PACKAGE_LED 2
-#define GAP_LED 5
+#define GAP_LED 8
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
 CRGB leds[NUM_LEDS];
@@ -14,7 +15,7 @@ const CRGB black = CRGB::Black;
 
 
 void initializeShelf(){
-  for(int i=0; i < NUM_LEDS; i+= PACKAGE_LED + GAP_LED){
+  for(int i=OFFSET; i < NUM_LEDS; i+= PACKAGE_LED + GAP_LED){
     leds[i] = CRGB::White;
     leds[i + 1] = CRGB::Green;
   }
@@ -74,25 +75,25 @@ void loop()
         }
       }
       else if (cod == "emdia"){
-        int endereco = (getValue(texto, ' ', 1).toInt()-1)*(PACKAGE_LED + GAP_LED);
+        int endereco = (getValue(texto, ' ', 1).toInt()-1)*(PACKAGE_LED + GAP_LED) + OFFSET;
         if (leds[endereco] == white){
           leds[endereco + 1] = CRGB::Green;
         }
       }
       else if (cod == "ultimodia"){
-        int endereco = (getValue(texto, ' ', 1).toInt()-1)*(PACKAGE_LED + GAP_LED);
+        int endereco = (getValue(texto, ' ', 1).toInt()-1)*(PACKAGE_LED + GAP_LED) + OFFSET;
         if (leds[endereco] == white){
           leds[endereco + 1] = CRGB::Yellow;
         }
       }
       else if (cod == "atraso"){
-        int endereco = (getValue(texto, ' ', 1).toInt()-1)*(PACKAGE_LED + GAP_LED);
+        int endereco = (getValue(texto, ' ', 1).toInt()-1)*(PACKAGE_LED + GAP_LED) + OFFSET;
         if (leds[endereco] == white){
           leds[endereco + 1] = CRGB::Red;
         }
       }
       else if (cod == "retirar"){
-        int endereco = (getValue(texto, ' ', 1).toInt()-1)*(PACKAGE_LED + GAP_LED);
+        int endereco = (getValue(texto, ' ', 1).toInt()-1)*(PACKAGE_LED + GAP_LED) + OFFSET;
         if (leds[endereco] == white){
           leds[endereco] = CRGB::Black;
           leds[endereco + 1] = CRGB::Black;
@@ -100,7 +101,7 @@ void loop()
       }
       else if (cod == "chegou"){
         String condicao = getValue(texto, ' ', 1);
-        int endereco = (getValue(texto, ' ', 2).toInt()-1)*(PACKAGE_LED + GAP_LED);
+        int endereco = (getValue(texto, ' ', 2).toInt()-1)*(PACKAGE_LED + GAP_LED) + OFFSET;
         if (leds[endereco] != white)
         {
           if (condicao == "emdia"){

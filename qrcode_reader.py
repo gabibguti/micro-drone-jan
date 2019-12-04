@@ -32,8 +32,9 @@ def read_qrcode(img_name, render_inspection_img = False):
 	formattedData = {}
 	lines = barcodeData.split('\r\n')
 	for line in lines:
-		[key, value] = line.split(': ')
-		formattedData[key] = value
+		if(len(line) > 0):
+			[key, value] = line.split(': ')
+			formattedData[key] = value
 
 	if(render_inspection_img):
 		# extract the bounding box location of the barcode and draw the
@@ -52,4 +53,4 @@ def read_qrcode(img_name, render_inspection_img = False):
 
 	return formattedData
 
-read_qrcode('IMG_QRCode_1.jpg')
+read_qrcode('DRONE_IMG_1.jpeg', True)
