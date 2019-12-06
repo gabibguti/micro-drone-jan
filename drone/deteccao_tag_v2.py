@@ -114,15 +114,6 @@ def threaded_function(arg, arg2):
     #xTol = 125
     xTol = 75
     yTol = 75
-
-    # Set drone orientation goto(0,0,0)
-    sleep(drone_interval)
-    drone.takeoff()
-    sleep(drone_interval)
-    drone.goto(0, 0, 0, 10)
-    sleep(drone_interval)
-    drone.goto(0, 0, 35, 10)
-    sleep(drone_interval)
     
     # TODO: ajustar intervalo de tolerancia entre cada detecção
     detection_tolerance = timedelta(seconds=5)
@@ -219,19 +210,21 @@ hRef = 0
 def nao_morre():
     global timer
     if drone is not None:
-        print(drone.state["bat"])
+        print("Batery", drone.state["bat"])
         drone.read_tof
     timer = Timer(5,nao_morre)
     timer.start()
 
 def print_state():
     global state_timer
-    if curr_state:
+    wait_sec = 3
+    if curr_state:    
         print("Drone's current state is: ", curr_state)
-    if drone is not None:
-        print(drone.state["bat"])
-        drone.read_tof
-    state_timer = Timer(1.5,print_state)
+        if curr_state == "find_first_tag":
+            print("\tNo tag found yet... Going up!\n")
+            wait_sec = 6
+            
+    state_timer = Timer(wait_sec,print_state)
     state_timer.start()
 
 def mov_drone_recorrente():
@@ -242,8 +235,7 @@ def mov_drone_recorrente():
     if drone is not None:
         
         if curr_state == "find_first_tag":
-            print("\t\tNo tag found yet... Going up!\n")
-            drone.rc(0, 0, 5, 0)
+            drone.rc(0, 0, 10, 0)
             
         elif curr_state == "centralize":
             # [TODO] -> Gustavo
@@ -253,6 +245,7 @@ def mov_drone_recorrente():
             #    centralize() -> drone.rc(alguma direcao)
             
             # todo delete test:
+            drone.rc(0, 0, -3, 0)
             curr_state = "detect_qr_code"
             pass
         
@@ -285,13 +278,13 @@ def mov_drone_recorrente():
                 curr_state = "centralize"
                 new_tag_found = False
             else:
-                drone.rc(5, 0, 0, 0) # FIXME: Next state should be about QR Code
+                drone.rc(7, 0, 0, 0) # FIXME: Next state should be about QR Code
                 
         else:
             # Transition State, do nothing
             pass
         
-    timer_mov_drone = Timer(0.01, mov_drone_recorrente) # 100 ms
+    timer_mov_drone = Timer(0.001, mov_drone_recorrente) # 100 ms
     timer_mov_drone.start()
 
 curr_dir = os.getcwd()
@@ -348,6 +341,13 @@ if __name__ == '__main__':
     drone = Tello("TELLO-C7AC08", test_mode=False)
     drone.inicia_cmds()
     sleep(drone_interval)
+    drone.takeoff()
+    sleep(drone_interval)
+    # Set drone orientation goto(0,0,0)
+#    drone.goto(0, 0, 0, 10)
+#    sleep(drone_interval)
+ #   drone.goto(0, 0, 35, 10)
+  #  sleep(drone_interval)
 
     # Timers:
     timer = Timer(5,nao_morre)
