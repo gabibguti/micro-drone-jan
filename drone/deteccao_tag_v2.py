@@ -14,17 +14,12 @@ def para():
 def mov_dronee(x, y, z, w):
     drone.goto(int(x), int(y), int(z), int(w))
 
-def dentro_regiao(img, xRef, yRef, wRef, hRef):
-    wReg = int(img.shape[0] * 2 / 3)
-    xReg = int(img.shape[0] / 6)
-    hReg = int(img.shape[1] * 2 / 3)
-    yReg = int(img.shape[1] / 6)
-
-    areaRef = wRef * hRef
+def dentro_regiao():
+    global xDif
+    global yDif
     # print("[REG] x:{}, y:{}, h:{}, l:{}, area:{}\n".format(xReg, yReg, wReg, hReg, areaRef))
-    if (xReg < xRef) and (yReg < yRef):
-        if (xReg + wReg) > (xRef + wRef):
-            if (yReg + hReg) > (yRef + hRef):
+    if (xDif > -100) and (xDif < 100):
+        if (yDif > -100) and (yDif < 100):
                 return True
     return False
 
@@ -39,25 +34,31 @@ def movVert(yRef, yReg):
     drone.goto(0, 0, int(zDist)*10, 10)
     sleep(drone_interval)
 
-def centralizaDrone(img, xRef, yRef, wRef, hRef):
-    global isAdjusting
-    xMid = int(img.shape[1] / 2)
-    yMid = int(img.shape[0] / 2)
-    xReg = (xMid - wRef/2)
-    yReg = (yMid - hRef/2)
-    xDif = int((xReg - xRef)/10)
-    yDif = int((yReg - yRef)/10)
+def centralizaDrone():
     #drone.goto(0,0,0,10)
     #sleep(drone_interval)
-    print("\t[DIF] xDif:{}, yDif:{}".format(xDif, yDif))
+    #print("\t[DIF] xDif:{}, yDif:{}".format(xDif, yDif))
     #drone.goto(0,30,0,10)
+    velX = 0
+    velZ = 0
+    if (xDif < -100):
+        velX = 10
+    elif (xDif > 100):
+        velX = -10
+    if (yDif < -100):
+        velZ = 10
+    elif (yDif > 100):
+        velZ = -10
+    drone.rc(velX, 0, velZ, 0)
+
+
     #movHoriz(xRef, xReg)
-    if (xDif > 5) or (xDif < -5):
-       movHoriz(xRef, xReg)
-    if yDif != 0:
-       movVert(yRef, yReg)
-    print("test")
-    isAdjusting = False
+    #if (xDif > 5) or (xDif < -5):
+    #   movHoriz(xRef, xReg)
+    #if yDif != 0:
+    #   movVert(yRef, yReg)
+    #print("test")
+    #isAdjusting = False
 
 
 def decola():
@@ -106,6 +107,8 @@ def threaded_function(arg, arg2):
     global yRef
     global wRef
     global hRef
+    global xDif
+    global yDif
     
     global curr_state
 
@@ -165,7 +168,13 @@ def threaded_function(arg, arg2):
                         yRef = y
                         wRef = w
                         hRef = h
-                        area = w * h                        
+                        area = w * h
+                        xMid = int(blue_img.shape[1] / 2)
+                        yMid = int(blue_img.shape[0] / 2)
+                        xReg = (xMid - wRef/2)
+                        yReg = (yMid - hRef/2)
+                        xDif = xReg - xRef
+                        yDif = yRef - yReg
                         break
         
         #if last_detect > datetime.now():
@@ -178,10 +187,10 @@ def threaded_function(arg, arg2):
             last_detect = datetime.now() + detection_tolerance  # starts timer
             
             # todo delete test:
-            if curr_state != "find_next_tag":
-                curr_state = "find_next_tag"
-            elif new_tag_found == True:
-                curr_state = "detect_qr_code"
+            #if curr_state != "find_next_tag":
+            #    curr_state = "find_next_tag"
+            #elif new_tag_found == True:
+            #    curr_state = "detect_qr_code"
             
         if last_detect > datetime.now():
             final_img = blue_img.copy()
@@ -202,10 +211,13 @@ routine_states = ["find_first_tag", # go up until find a tag
                   "goto_next_floor" # go up OR down after scanned all tags from one level
                   ]
 curr_state = None
+refPic = None
 xRef = 0
 yRef = 0
 wRef = 0
 hRef = 0
+xDif = 0
+yDif = 0
 
 def nao_morre():
     global timer
@@ -239,14 +251,14 @@ def mov_drone_recorrente():
             
         elif curr_state == "centralize":
             # [TODO] -> Gustavo
-            # if dentro_regiao():
-            #    curr_state = "detect_qr_code"
-            # else:
+            if dentro_regiao():
+                curr_state = "detect_qr_code"
+            else:
             #    centralize() -> drone.rc(alguma direcao)
-            
+                centralizaDrone()
             # todo delete test:
-            drone.rc(0, 0, -3, 0)
-            curr_state = "detect_qr_code"
+            #drone.rc(0, 0, -3, 0)
+            #curr_state = "detect_qr_code"
             pass
         
         elif curr_state == "detect_qr_code":
@@ -284,7 +296,7 @@ def mov_drone_recorrente():
             # Transition State, do nothing
             pass
         
-    timer_mov_drone = Timer(0.001, mov_drone_recorrente) # 100 ms
+    timer_mov_drone = Timer(0.1, mov_drone_recorrente) # 100 ms
     timer_mov_drone.start()
 
 curr_dir = os.getcwd()
@@ -310,6 +322,8 @@ if __name__ == '__main__':
     yRef = 0
     wRef = 0
     hRef = 0
+    xReg = 0
+    yReg = 0
 
     # Asserts or creates directory where tags pictures will be storage
     if not os.path.exists(pics_dir):
