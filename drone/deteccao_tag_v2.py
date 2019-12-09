@@ -383,7 +383,7 @@ if __name__ == '__main__':
         imshow("Main Vison", imagem)
         imshow("Thread Vison", final_img)
         # Mostra a imagem durante 1 milissegundo e interrompe loop quando tecla q for pressionada
-        if waitKey(1) & 0xFF == ord("q"):
+        if waitKey(20) & 0xFF == ord("q"):
             break
 
     kill_thread = True
