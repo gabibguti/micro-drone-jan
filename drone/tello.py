@@ -13,9 +13,9 @@ class Tello:
 
     def _conectar_tello_win(self):
         a="cp858"
-        print("Conectando ao Tello(%s)"%self.TELLO_SSID,end="")
+        print("Conectando ao Tello(%s)"%self.TELLO_SSID)
         for _ in range(15):
-            print(".",end="")
+            print(".")
             netshcmd = subprocess.Popen('netsh wlan connect ssid=%s name=%s'%(self.TELLO_SSID,self.TELLO_SSID), shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE )
             output_1, errors_1 = netshcmd.communicate()
             if errors_1: 
@@ -28,7 +28,7 @@ class Tello:
                 else:
                     for linha in output_2.decode(a).splitlines():
                         if self.TELLO_SSID in linha:
-                            print("\n"+output_1.decode(a),end="")
+                            print("\n"+output_1.decode(a))
                             return True
         return False    
         
@@ -43,7 +43,7 @@ class Tello:
         # if conectado:
         #     print("Inicializando Tello...")
         # else:
-        #     print("Erro na conexão. Reinicie o programa!")
+        #     print("Erro na conexao. Reinicie o programa!")
 
         self.resposta = None
         self.resposta_estado = None
@@ -228,12 +228,12 @@ class Tello:
 
     def inicia_cmds(self):
         if not self.test_mode:
-            print("Entrando em modo SDK: ",end="")
+            print("Entrando em modo SDK: ")
             resposta = self.envia_comando_de_leitura("command")
             while resposta!="ok":
                 pass
             print(resposta)
-            print("Iniciando Stream de video: ",end="")
+            print("Iniciando Stream de video: ")
             resposta = self.envia_comando_de_leitura("streamon")
             while resposta!="ok":
                 pass
