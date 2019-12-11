@@ -145,6 +145,12 @@ def add_package(package_id, date, row, col):
     collection.insert(package)
     return 'Package info added to database'
 
+@app.route('/remove_package/<int:row>/<int:col>')
+def remove_package(row, col):
+    # Note: data must be in the format: YYYY-MM-DD
+    package = list(collection.find({"row": row, "col": col}))
+    return 'Package removed from database'
+
 @app.route('/package/<int:package_id>')
 def get_package(package_id):
     query = {"id": package_id}
