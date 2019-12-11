@@ -70,21 +70,6 @@ def is_square(w, h):
     else: # its a Rectangle
         return False
 
-def filter_blue_color_in_image(imagem):
-    # Parte 1
-    imagem_hsv = cvtColor(imagem, COLOR_BGR2HSV)
-    mascara = inRange(imagem_hsv, LIGHT_BLUE, DARK_BLUE)
-    imagem1 = bitwise_and(imagem, imagem, mask=mascara)
-    # Parte 2
-    mascara2 = bitwise_not(mascara)
-    graybgr = cvtColor(imagem, COLOR_BGR2GRAY)
-    graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
-    imagem2 = bitwise_and(graybgr, graybgr, mask=mascara2)
-
-    # Parte 3
-    blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
-    return blue_img, mascara
-
 # DRONE MOVEMENT
 def iniciar_drone():
     global drone
@@ -312,8 +297,8 @@ new_tag_found = False
 if __name__ == '__main__':
 
     # test_mode = 1 # camera drone, com voo
-    # test_mode = 2 # camera drone, sem voo
-    test_mode = 3  # camera pc, sem drone
+    test_mode = 2 # camera drone, sem voo
+    # test_mode = 3  # camera pc, sem drone
 
     # Create empty folder to store tag pictures
     if not os.path.exists(PICS_DIR):
@@ -341,7 +326,8 @@ if __name__ == '__main__':
 
     # Drone start
     if test_mode != 3:
-        drone = Tello("TELLO-C7AC08", test_mode=False)
+        #drone = Tello("TELLO-C7AC08", test_mode=False)
+        drone = Tello("TELLO-D023AE", test_mode=False)
         drone.inicia_cmds()
         sleep(DRONE_TIMEOUT)
 
