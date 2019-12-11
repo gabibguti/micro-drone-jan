@@ -55,9 +55,8 @@ def delete_picture_files():
 def save_tag_img(img, tag_id):
     tag_img_label = "tag" + str(tag_id)
     print("Taking Picture... {}".format(tag_img_label))
-    tag_picture = os.path.join(PICS_DIR, tag_img_label + ".png")
-    if not os.path.exists(tag_picture):
-        imwrite(tag_picture, img)
+    tag_path = os.path.join(PICS_DIR, tag_img_label + ".png")
+    imwrite(tag_path, img)
 
 # IMAGE TREATMENT
 
@@ -105,7 +104,7 @@ def centralizaDrone():
     drone.rc(velX, 0, velZ, 0)
 
 def threaded_function(arg, arg2):
-    global FOUND_NEW_TAG, CURR_TAG_DATA, CURR_IMG_DATA
+    global FOUND_NEW_TAG, CURR_TAG_DATA, CURR_IMG_DATA, UPDATE_TAG
     global imagem
     global final_img
     global curr_state
@@ -195,9 +194,7 @@ def threaded_function(arg, arg2):
                             # add green rectangle to identify tag (blue square)
                             rectangle(blue_img, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=3)
                             # save image on local folder
-                            if last_detect < datetime.now():
-                                save_tag_img(blue_img, TAG_COUNTER)
-                                last_detect = datetime.now() + DETECTION_TOLERANCE  # starts timer
+                            save_tag_img(blue_img, TAG_COUNTER)
 
                         break
                     else:
@@ -338,8 +335,8 @@ new_tag_found = False
 
 if __name__ == '__main__':
 
-    # test_mode = 1 # camera drone, com voo
-    test_mode = 2 # camera drone, sem voo
+    test_mode = 1 # camera drone, com voo
+    # test_mode = 2 # camera drone, sem voo
     # test_mode = 3  # camera pc, sem drone
 
     # Create empty folder to store tag pictures
