@@ -8,6 +8,7 @@ from time import sleep
 from threading import Timer
 from threading import Thread
 import math  
+from simple_functions import *
 
 # GLOBALS
 LIGHT_BLUE = (90, 50, 38)
@@ -85,7 +86,6 @@ def filter_blue_color_in_image(imagem):
     return blue_img, mascara
 
 # DRONE MOVEMENT
-
 def iniciar_drone():
     global drone
     drone.inicia_cmds()
@@ -132,21 +132,29 @@ def threaded_function(arg, arg2):
     xTol = 75
     yTol = 75
     
-    # TODO: ajustar intervalo de tolerancia entre cada deteccao
-    detection_tolerance = timedelta(seconds=5)
-    last_detect = datetime.now()
-    area_limit = 6000
-    
-    # NOTE: Primeiro estado eh de achar uma tag, assumimos que o drone esta alinhado horizontalmente com a tag e so precisa ir para cima
-    curr_state = "find_first_tag" 
-    
-    while True:    
+    # Melhorias rect verde
+    area_limit = 3000
+    show_rect = False
+    counter_no_rect = 0
+    COUNTER_LIMIT = 250
 
+    # NOTE: Primeiro estado eh de achar uma tag, assumimos que o drone esta alinhado horizontalmente com a tag e so precisa ir para cima
+    curr_state = "find_first_tag"
+    LIGHT_BLUE = (90, 150, 0)
+    DARK_BLUE = (150, 255, 255)
+
+    COUNT_NONES = 0
+    DISCONNECT_TOL = 50
+
+    while True:    
         if drone is None:
             print("Drone has disconected...")
-            break
+            COUNT_NONES+=1
+            if COUNT_NONES >= DISCONNECT_TOL:
+                break
+            continue
         
-        blue_img, mascara = filter_blue_color_in_image(imagem)
+        blue_img, mascara = apply_mask(imagem, LIGHT_BLUE, DARK_BLUE)
         blue_img_height = blue_img.shape[0]
         blue_img_width  = blue_img.shape[1]
         img_center_x = int(blue_img_width / 2)
@@ -163,7 +171,8 @@ def threaded_function(arg, arg2):
                 if len(approx) == 4:
                     # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
                     (x, y, w, h) = boundingRect(approx)
-                    if is_square(w, h) and w * h >= area_limit:                        
+                    if w * h >= area_limit:
+                        show_rect = True
                         tag_center_x = x + w / 2 
                         tag_center_y = y + h / 2 
 
@@ -180,6 +189,17 @@ def threaded_function(arg, arg2):
                             save_tag_img(blue_img)
 
                         break
+                    else:
+                        counter_no_rect += 1
+                    if counter_no_rect >= COUNTER_LIMIT:
+                        show_rect = False
+
+                    # if show_rect:
+                    #     rectangle(blue_img, pt1=(xRef, yRef), pt2=(xRef + wRef, yRef + hRef), color=(0, 255, 0), thickness=3)
+                    # if is_new_square(xRef, xOld, yRef, yOld, xTol) and last_detect < datetime.now():
+                    #     new_tag_found = True ## CHECK HERE
+                    #     take_picture(blue_img, xRef, yRef, wRef, hRef)
+                    #     last_detect = datetime.now() + detection_tolerance  # starts timer
 
         # update thread image stream
         final_img = blue_img.copy()
@@ -246,16 +266,16 @@ def mov_drone_recorrente():
 
             if(diff_x > 60):
                 if(CURR_TAG_DATA["x"] > CURR_IMG_DATA["x"]): # go left
-                    moveX = -5
-                else: # go right
                     moveX = 5
+                else: # go right
+                    moveX = -5
             elif(diff_y > 60):
                 if(CURR_TAG_DATA["y"] < CURR_IMG_DATA["y"]): # go up
                     moveZ = 5
                 else: # go down
                     moveZ = -5
 
-            print("drone going: right/left: {} up/down: {}".format(moveX, moveZ))
+            print("drone going: left/right: {} up/down: {}".format(moveX, moveZ))
             drone.rc(moveX, 0, moveZ, 0)
 
 #            if dentro_regiao():
@@ -291,6 +311,10 @@ new_tag_found = False
 
 if __name__ == '__main__':
 
+    # test_mode = 1 # camera drone, com voo
+    # test_mode = 2 # camera drone, sem voo
+    test_mode = 3  # camera pc, sem drone
+
     # Create empty folder to store tag pictures
     if not os.path.exists(PICS_DIR):
         os.makedirs(PICS_DIR)
@@ -316,27 +340,47 @@ if __name__ == '__main__':
     drone_end = datetime.now() + timedelta(seconds=50)
 
     # Drone start
-    drone = Tello("TELLO-C7AC08", test_mode=False)
-    iniciar_drone()
+    if test_mode != 3:
+        drone = Tello("TELLO-C7AC08", test_mode=False)
+        drone.inicia_cmds()
+        sleep(DRONE_TIMEOUT)
 
-    # Timers:
-    timer = Timer(5,log_drone_battery)
-    timer.start()
-    timer_mov_drone = Timer(0.1, mov_drone_recorrente)
-    timer_mov_drone.start()
+        if test_mode == 1:
+            drone.takeoff()
+            sleep(DRONE_TIMEOUT)
+
+        # Time nao morre
+        timer = Timer(5, DRONE_TIMEOUT)
+        timer.start()
+
+    if test_mode == 1:
+        # Timer moves
+        timer_mov_drone = Timer(0.1, mov_drone_recorrente)
+        timer_mov_drone.start()
+
+    # State machine timer
     state_timer = Timer(1.5,log_drone_state)
     state_timer.start()
-    
+
     # First capture to initialize thread
-    imagem = drone.current_image
+    if test_mode == 3:
+        drone = None
+        stream = VideoCapture(0)
+        _, imagem = stream.read()
+    else:
+        imagem = drone.current_image
     final_img = imagem.copy()
+
     thread = Thread(target=threaded_function, args=(5, 2,))
     thread.start()
 
     while True:
-        imagem = drone.current_image
+        if test_mode == 3:
+            _, imagem = stream.read()
+        else:
+            imagem = drone.current_image
 
-        imshow("Main Vison", imagem)
+        # imshow("Main Vison", imagem)
         imshow("Thread Vison", final_img)
         # Mostra a imagem durante 1 milissegundo e interrompe loop quando tecla q for pressionada
         if waitKey(20) & 0xFF == ord("q"):
@@ -344,3 +388,6 @@ if __name__ == '__main__':
 
     kill_thread = True
     thread.join()
+    if test_mode == 3:
+        stream.release()
+        destroyAllWindows()
