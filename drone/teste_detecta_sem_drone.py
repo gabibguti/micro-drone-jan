@@ -130,7 +130,6 @@ dark_blue = (150, 255, 255)
 kill_thread = False
 
 if __name__ == '__main__':
-
     # Asserts or creates directory where tags pictures will be storage
     if not os.path.exists(pics_dir):
         os.makedirs(pics_dir)
