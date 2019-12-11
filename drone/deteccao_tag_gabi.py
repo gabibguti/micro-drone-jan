@@ -7,6 +7,7 @@ from tello import Tello
 from time import sleep
 from threading import Timer
 from threading import Thread
+import math  
 
 # GLOBALS
 LIGHT_BLUE = (90, 50, 38)
@@ -17,7 +18,7 @@ CURR_DIR = os.getcwd()
 PICS_DIR = os.path.join(CURR_DIR, "tag-pics")
 DRONE_TIMEOUT = 7
 curr_state = None
-MAX_UP_MOVEMENTS = 5
+MAX_UP_MOVEMENTS = 10
 UP_MOVEMENTS = 0
 CURR_TAG_DATA = {"x": 0, "y": 0}
 CURR_IMG_DATA = {"x": 0, "y": 0}
@@ -40,6 +41,10 @@ def log_drone_state():
     state_timer.start()
 
 # UTILS
+
+def calculateDistance(x1,y1,x2,y2):  
+     dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)  
+     return dist  
 
 def delete_picture_files():
     for tag_picture in os.listdir(PICS_DIR):
@@ -75,15 +80,19 @@ def filter_blue_color_in_image():
     graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
     # Parte 3
     blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
-    return blue_img
+    return blue_img, mascara
 
 # DRONE MOVEMENT
 
-def decola():
+def iniciar_drone():
+    global drone
+    drone.inicia_cmds()
+    sleep(DRONE_TIMEOUT)
     drone.takeoff()
     sleep(DRONE_TIMEOUT)
 
 def para():
+    global drone
     drone.land()
     sleep(DRONE_TIMEOUT)
     drone = None
@@ -110,6 +119,7 @@ def centralizaDrone():
     drone.rc(velX, 0, velZ, 0)
 
 def threaded_function(arg, arg2):
+    global FOUND_NEW_TAG, CURR_TAG_DATA, CURR_IMG_DATA
     global imagem
     global final_img
     global curr_state
@@ -134,14 +144,13 @@ def threaded_function(arg, arg2):
             print("Drone has disconected...")
             break
         
-        blue_img = filter_blue_color_in_image()
+        blue_img, mascara = filter_blue_color_in_image()
         blue_img_height = blue_img.shape[0]
         blue_img_width  = blue_img.shape[1]
         img_center_x = int(blue_img_width / 2)
         img_center_y = int(blue_img_height / 2)
 
         contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
-        area = 0
         
         if len(contornos) != 0:
             contornos.sort(key=contourArea ,reverse=True) # ordena da maior a menor area
@@ -188,9 +197,12 @@ routine_states = [
 
 
 def mov_drone_recorrente():
+    global FOUND_NEW_TAG, UP_MOVEMENTS, MAX_UP_MOVEMENTS
     global timer_mov_drone
     global curr_state
     global new_tag_found
+
+    function_timeout = 0.5
     
     if drone is not None:
         
@@ -198,16 +210,26 @@ def mov_drone_recorrente():
             print("UP_MOVEMENTS: {}".format(UP_MOVEMENTS))
             if(FOUND_NEW_TAG and len(os.listdir(PICS_DIR)) > 0): #when we have a tag picture try to centralize
                 FOUND_NEW_TAG = False
+                drone.rc(0, 0, 0, 0) # stop in air
                 curr_state == "centralize"
             else:        
-                if(UP_MOVEMENTS < MAX_UP_MOVEMENTS):     
+                if(UP_MOVEMENTS < MAX_UP_MOVEMENTS):
+                    UP_MOVEMENTS += 1
                     drone.rc(0, 0, 10, 0) # try going up
+                    function_timeout = 4
                 else:
                     curr_state = "turnoff" # give up
             
         elif curr_state == "centralize":
-            diff_x = CURR_TAG_DATA["x"]
-            if(CURR_TAG_DATA["x"] - )
+            dist = calculateDistance(CURR_IMG_DATA["x"], CURR_IMG_DATA["y"], CURR_TAG_DATA["x"], CURR_TAG_DATA["y"])
+
+            print("Distance from tag to center:", dist)
+
+            diff_x = abs(CURR_TAG_DATA["x"] -  CURR_IMG_DATA["x"])
+            diff_y = abs(CURR_TAG_DATA["y"] -  CURR_IMG_DATA["y"])
+
+            drone.rc(0, 0, 0, 0) # stay still
+
 #            if dentro_regiao():
 #                curr_state = "detect_qr_code"
 #            else:
@@ -226,14 +248,14 @@ def mov_drone_recorrente():
             else:
                 drone.rc(7, 0, 0, 0)
 
-        elif curr_state = "turnoff":         
+        elif curr_state == "turnoff":         
             para()
 
         else:
             # Transition State, do nothing
             pass
         
-    timer_mov_drone = Timer(0.5, mov_drone_recorrente) # 500 ms
+    timer_mov_drone = Timer(function_timeout, mov_drone_recorrente) # 500 ms
     timer_mov_drone.start()
 
 kill_thread = False
@@ -267,10 +289,7 @@ if __name__ == '__main__':
 
     # Drone start
     drone = Tello("TELLO-C7AC08", test_mode=False)
-    drone.inicia_cmds()
-    sleep(DRONE_TIMEOUT)
-    drone.takeoff()
-    sleep(DRONE_TIMEOUT)
+    iniciar_drone()
 
     # Timers:
     timer = Timer(5,log_drone_battery)
