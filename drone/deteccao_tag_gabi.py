@@ -11,7 +11,7 @@ import math
 from simple_functions import *
 
 # GLOBALS
-LIGHT_BLUE = (90, 50, 38)
+LIGHT_BLUE = (100, 150, 0)
 DARK_BLUE = (150, 255, 255)
 FOUND_NEW_TAG = False
 TAG_COUNTER = 0
@@ -25,12 +25,12 @@ UP_MOVEMENTS = 0
 CURR_TAG_DATA = {"x": 0, "y": 0, "area": 0}
 CURR_IMG_DATA = {"x": 0, "y": 0}
 UPDATE_TAG = False
-TOTAL_DIFF_TOLERANCE = 130
-WIDTH_DIFF_TOLERANCE = 100
-HEIGHT_DIFF_TOLERANCE = 150
+WIDTH_DIFF_TOLERANCE = 115
+HEIGHT_DIFF_TOLERANCE = 180
 
 OKAY = {"x": False, "y": False, "z": False}
 
+FIRST = True
 
 # LOGS
 def log_drone_battery():
@@ -232,7 +232,7 @@ def movement_drone(x, y, z, k):
         drone.rc(x, y, z, k)
 
 def mov_drone_recorrente():
-    global FOUND_NEW_TAG, UP_MOVEMENTS, MAX_UP_MOVEMENTS, UPDATE_TAG, OKAY
+    global FOUND_NEW_TAG, UP_MOVEMENTS, MAX_UP_MOVEMENTS, UPDATE_TAG, OKAY, FIRST
     global timer_mov_drone
     global curr_state
     global new_tag_found
@@ -269,44 +269,46 @@ def mov_drone_recorrente():
             if (OKAY["x"] and OKAY["y"] and OKAY["z"]):
                 movement_drone(0, 0, 0, 0)
                 UPDATE_TAG = False
+                OKAY = {"x": False, "y": False, "z": False}
                 curr_state = "centralize_qr_code"
             else:
                 curr_state = "centralize"
 
         elif curr_state == "centralize":
             function_timeout = 2
-            diff_x = abs(CURR_TAG_DATA["x"] -  CURR_IMG_DATA["x"])
-            diff_y = abs(CURR_TAG_DATA["y"] -  CURR_IMG_DATA["y"])
+            diff_x = abs(CURR_TAG_DATA["x"] - CURR_IMG_DATA["x"])
+            diff_y = abs(CURR_TAG_DATA["y"] - CURR_IMG_DATA["y"])
             print("DIFFS: * ", diff_x, " * ", diff_y)
             
             moveX = 0
             moveZ = 0
             moveY = 0
-            if(not OKAY["x"]):
+            if(not OKAY["z"] and FIRST == True):
+                if(CURR_TAG_DATA["area"] < 6000):
+                    moveY = 5
+                elif(CURR_TAG_DATA["area"] > 10000):
+                    moveY = -5
+                else:
+                    OKAY["z"] = True
+                    FIRST = False
+            elif(not OKAY["x"]):
                 if(diff_x > WIDTH_DIFF_TOLERANCE):
                     if(CURR_TAG_DATA["x"] > CURR_IMG_DATA["x"]): # go left
-                        moveX = 5
+                        moveX = 7
                     else: # go right
-                        moveX = -5
+                        moveX = -7
                 else:
                     OKAY["x"] = True
             elif(not OKAY["y"]):
                 if(diff_y > HEIGHT_DIFF_TOLERANCE):
                     if(CURR_TAG_DATA["y"] < CURR_IMG_DATA["y"]): # go up
-                        moveZ = 5
+                        moveZ = 10
                     else: # go down
-                        moveZ = -5
+                        moveZ = -10
                 else:
                     OKAY["y"] = True
-            elif(not OKAY["z"]):
-                if(CURR_TAG_DATA["area"] < 5000):
-                    moveY = 5
-                elif(CURR_TAG_DATA["area"] > 8000):
-                    moveY = -5
-                else:
-                    OKAY["z"] = True
 
-            print("drone going: left/right: {} up/down: {} front/back: {}".format(moveX, moveZ, moveY))
+            print("drone going: left/right: {} up/down: {} front/back: {} area: {}".format(moveX, moveZ, moveY, CURR_TAG_DATA["area"]))
             movement_drone(moveX, moveY, moveZ, 0)
 
             UPDATE_TAG = True
@@ -323,10 +325,18 @@ def mov_drone_recorrente():
             movement_drone(0, 0, 0, 0)
             sleep(1)
             save_qr_code(imagem, TAG_COUNTER)
-            curr_state = "turnoff"
+            curr_state = "find_next_tag"
 
         elif curr_state == "find_next_tag":
-            pass
+            function_timeout = 10
+            movement_drone(10, 0, 0, 0)
+            if(FOUND_NEW_TAG):
+                print("FOUNT TAG {}!".format(TAG_COUNTER))
+                FOUND_NEW_TAG = False
+                if(TAG_COUNTER < 3):
+                    curr_state = "wait"
+                else:
+                    curr_state = "turnoff"
 
         elif curr_state == "turnoff":
             para()
