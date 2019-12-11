@@ -23,6 +23,7 @@ MAX_UP_MOVEMENTS = 10
 UP_MOVEMENTS = 0
 CURR_TAG_DATA = {"x": 0, "y": 0}
 CURR_IMG_DATA = {"x": 0, "y": 0}
+UPDATE_TAG = False
 
 # LOGS
 def log_drone_battery():
@@ -51,14 +52,12 @@ def delete_picture_files():
     for tag_picture in os.listdir(PICS_DIR):
         os.remove(os.path.join(PICS_DIR,tag_picture))
 
-def save_tag_img(img):
-    global TAG_COUNTER
-    tag_img_label = "tag" + str(TAG_COUNTER + 1)
+def save_tag_img(img, tag_id):
+    tag_img_label = "tag" + str(tag_id)
     print("Taking Picture... {}".format(tag_img_label))
     tag_picture = os.path.join(PICS_DIR, tag_img_label + ".png")
     if not os.path.exists(tag_picture):
         imwrite(tag_picture, img)
-        TAG_COUNTER += 1
 
 # IMAGE TREATMENT
 
@@ -110,6 +109,7 @@ def threaded_function(arg, arg2):
     global imagem
     global final_img
     global curr_state
+    global TAG_COUNTER
 
     # TODO: Ajustar valores de tolerancia (depende do tamanho da nossa area azul a ser capturada, a que distancia elas \
     #  serao capturadas, espacamento entre cada quadrado azul na prateleira)
@@ -180,10 +180,22 @@ def threaded_function(arg, arg2):
                             # add green rectangle to identify tag (blue square)
                             rectangle(blue_img, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=3)
                             # save image on local folder
-                            save_tag_img(blue_img)
-                    break
-        else:
-            counter_no_rect += 1
+                            TAG_COUNTER += 1
+                            save_tag_img(blue_img, TAG_COUNTER)
+                        elif(UPDATE_TAG):
+                            # save tag and image data
+                            CURR_TAG_DATA["x"] = tag_center_x
+                            CURR_TAG_DATA["y"] = tag_center_y
+                            CURR_IMG_DATA["x"] = img_center_x
+                            CURR_IMG_DATA["y"] = img_center_y
+                            # add green rectangle to identify tag (blue square)
+                            rectangle(blue_img, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=3)
+                            # save image on local folder
+                            save_tag_img(blue_img, TAG_COUNTER)
+                        break
+                    else:
+                        counter_no_rect += 1
+                        break
 
         if counter_no_rect >= COUNTER_LIMIT:
             show_rect = False
@@ -206,6 +218,7 @@ def threaded_function(arg, arg2):
 routine_states = [
     "find_first_tag", # go up until find a tag
     "centralize", # right after finding a tag, centrilze drone
+    "wait",
     "detect_qr_code",
     "process_qr_code",
     "find_next_tag", # after processing the QR Code move right until find another tag
@@ -218,7 +231,7 @@ def movement_drone(x, y, z, k):
         drone.rc(x, y, z, k)
 
 def mov_drone_recorrente():
-    global FOUND_NEW_TAG, UP_MOVEMENTS, MAX_UP_MOVEMENTS
+    global FOUND_NEW_TAG, UP_MOVEMENTS, MAX_UP_MOVEMENTS, UPDATE_TAG
     global timer_mov_drone
     global curr_state
     global new_tag_found
@@ -234,8 +247,8 @@ def mov_drone_recorrente():
                 FOUND_NEW_TAG = False
                 UP_MOVEMENTS = 0
 
-                curr_state = "centralize"
-            else:
+                curr_state = "wait"
+
                 if(UP_MOVEMENTS < MAX_UP_MOVEMENTS):
                     UP_MOVEMENTS += 1
                     movement_drone(0, 0, 10, 0) # try going up
@@ -243,23 +256,27 @@ def mov_drone_recorrente():
                 else:
                     curr_state = "turnoff" # give up
 
-        elif curr_state == "centralize":
-
-            if(FOUND_NEW_TAG):
-                FOUND_NEW_TAG = True
-
+        elif curr_state == "wait":
+            function_timeout = 4
+            movement_drone(0, 0, 0, 0)
+            # calculate where to go
             dist = calculateDistance(CURR_IMG_DATA["x"], CURR_IMG_DATA["y"], CURR_TAG_DATA["x"], CURR_TAG_DATA["y"])
+            print("Distance from tag to center:", dist, " * ", diff_x, " * ", diff_y)
+
+            if (dist < 60):
+                movement_drone(0, 0, 0, 0)
+                UPDATE_TAG = False
+                curr_state = "detect_qr_code"
+            else:
+                curr_state = "centralize"
+
+        elif curr_state == "centralize":
+            function_timeout = 4
             diff_x = abs(CURR_TAG_DATA["x"] -  CURR_IMG_DATA["x"])
             diff_y = abs(CURR_TAG_DATA["y"] -  CURR_IMG_DATA["y"])
-            print("Distance from tag to center:", dist, " * ", diff_x, " * ", diff_y)
-            function_timeout = 6
 
             moveX = 0
             moveZ = 0
-
-            if (dist < 60):
-                curr_state = "detect_qr_code"
-
             if(diff_x > 60):
                 if(CURR_TAG_DATA["x"] > CURR_IMG_DATA["x"]): # go left
                     moveX = 5
@@ -273,6 +290,11 @@ def mov_drone_recorrente():
 
             print("drone going: left/right: {} up/down: {}".format(moveX, moveZ))
             movement_drone(moveX, 0, moveZ, 0)
+
+            UPDATE_TAG = True
+
+            # go back to wait
+            curr_state = "wait"
 
 #            if dentro_regiao():
 #                curr_state = "detect_qr_code"
