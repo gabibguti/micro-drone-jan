@@ -17,17 +17,19 @@ FOUND_NEW_TAG = False
 TAG_COUNTER = 0
 CURR_DIR = os.getcwd()
 PICS_DIR = os.path.join(CURR_DIR, "tag-pics")
-QR_CODE_DIR = os.chdir("./../qrcode-images")
+QR_CODE_DIR = os.path.join(CURR_DIR, "qrcode-images")
 DRONE_TIMEOUT = 7
 curr_state = None
 MAX_UP_MOVEMENTS = 10
 UP_MOVEMENTS = 0
-CURR_TAG_DATA = {"x": 0, "y": 0}
+CURR_TAG_DATA = {"x": 0, "y": 0, "area": 0}
 CURR_IMG_DATA = {"x": 0, "y": 0}
 UPDATE_TAG = False
 TOTAL_DIFF_TOLERANCE = 130
-WIDTH_DIFF_TOLERANCE = 60
-HEIGHT_DIFF_TOLERANCE = 100
+WIDTH_DIFF_TOLERANCE = 100
+HEIGHT_DIFF_TOLERANCE = 150
+
+OKAY = {"x": False, "y": False, "z": False}
 
 
 # LOGS
@@ -178,10 +180,16 @@ def threaded_function(arg, arg2):
                             # save tag and image data
                             CURR_TAG_DATA["x"] = tag_center_x
                             CURR_TAG_DATA["y"] = tag_center_y
+                            CURR_TAG_DATA["area"] = w * h
                             CURR_IMG_DATA["x"] = img_center_x
                             CURR_IMG_DATA["y"] = img_center_y
                             # add green rectangle to identify tag (blue square)
                             rectangle(blue_img, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=3)
+                            text = "x: {} y: {}".format(tag_center_x, tag_center_y)
+                            cv2.putText(blue_img, text, (int(tag_center_x), int(tag_center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                            text2 = "x_img: {} y_img: {}".format(img_center_x, img_center_y)
+                            cv2.putText(blue_img, text2, (int(img_center_x), int(img_center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
                             # save image on local folder
                             save_tag_img(blue_img, TAG_COUNTER)
 
@@ -224,7 +232,7 @@ def movement_drone(x, y, z, k):
         drone.rc(x, y, z, k)
 
 def mov_drone_recorrente():
-    global FOUND_NEW_TAG, UP_MOVEMENTS, MAX_UP_MOVEMENTS, UPDATE_TAG
+    global FOUND_NEW_TAG, UP_MOVEMENTS, MAX_UP_MOVEMENTS, UPDATE_TAG, OKAY
     global timer_mov_drone
     global curr_state
     global new_tag_found
@@ -250,7 +258,7 @@ def mov_drone_recorrente():
                 curr_state = "turnoff" # give up
 
         elif curr_state == "wait":
-            function_timeout = 4
+            function_timeout = 1
             movement_drone(0, 0, 0, 0)
             # calculate where to go
             dist = calculateDistance(CURR_IMG_DATA["x"], CURR_IMG_DATA["y"], CURR_TAG_DATA["x"], CURR_TAG_DATA["y"])
@@ -258,7 +266,7 @@ def mov_drone_recorrente():
             diff_y = abs(CURR_TAG_DATA["y"] -  CURR_IMG_DATA["y"])
             print("Distance from tag to center:", dist, " * ", diff_x, " * ", diff_y)
 
-            if (dist < TOTAL_DIFF_TOLERANCE):
+            if (OKAY["x"] and OKAY["y"] and OKAY["z"]):
                 movement_drone(0, 0, 0, 0)
                 UPDATE_TAG = False
                 curr_state = "centralize_qr_code"
@@ -266,25 +274,40 @@ def mov_drone_recorrente():
                 curr_state = "centralize"
 
         elif curr_state == "centralize":
-            function_timeout = 4
+            function_timeout = 2
             diff_x = abs(CURR_TAG_DATA["x"] -  CURR_IMG_DATA["x"])
             diff_y = abs(CURR_TAG_DATA["y"] -  CURR_IMG_DATA["y"])
-
+            print("DIFFS: * ", diff_x, " * ", diff_y)
+            
             moveX = 0
             moveZ = 0
-            if(diff_x > WIDTH_DIFF_TOLERANCE):
-                if(CURR_TAG_DATA["x"] > CURR_IMG_DATA["x"]): # go left
-                    moveX = 5
-                else: # go right
-                    moveX = -5
-            elif(diff_y > HEIGHT_DIFF_TOLERANCE):
-                if(CURR_TAG_DATA["y"] < CURR_IMG_DATA["y"]): # go up
-                    moveZ = 5
-                else: # go down
-                    moveZ = -5
+            moveY = 0
+            if(not OKAY["x"]):
+                if(diff_x > WIDTH_DIFF_TOLERANCE):
+                    if(CURR_TAG_DATA["x"] > CURR_IMG_DATA["x"]): # go left
+                        moveX = 5
+                    else: # go right
+                        moveX = -5
+                else:
+                    OKAY["x"] = True
+            elif(not OKAY["y"]):
+                if(diff_y > HEIGHT_DIFF_TOLERANCE):
+                    if(CURR_TAG_DATA["y"] < CURR_IMG_DATA["y"]): # go up
+                        moveZ = 5
+                    else: # go down
+                        moveZ = -5
+                else:
+                    OKAY["y"] = True
+            elif(not OKAY["z"]):
+                if(CURR_TAG_DATA["area"] < 5000):
+                    moveY = 5
+                elif(CURR_TAG_DATA["area"] > 8000):
+                    moveY = -5
+                else:
+                    OKAY["z"] = True
 
-            print("drone going: left/right: {} up/down: {}".format(moveX, moveZ))
-            movement_drone(moveX, 0, moveZ, 0)
+            print("drone going: left/right: {} up/down: {} front/back: {}".format(moveX, moveZ, moveY))
+            movement_drone(moveX, moveY, moveZ, 0)
 
             UPDATE_TAG = True
 
@@ -322,13 +345,17 @@ if __name__ == '__main__':
 
     test_mode = 1 # camera drone, com voo
     # test_mode = 2 # camera drone, sem voo
-    # test_mode = 3  # camera pc, sem drone
+    #test_mode = 3  # camera pc, sem drone
 
     # Create empty folder to store tag pictures
     if not os.path.exists(PICS_DIR):
         os.makedirs(PICS_DIR)
     else:
         delete_picture_files()
+
+    if not os.path.exists(QR_CODE_DIR):
+        os.makedirs(QR_CODE_DIR)
+
 
     # TODO: Ajustar valores de tolerancia (depende do tamanho da nossa area azul a ser capturada, a que distancia elas \
     #  serao capturadas, espacamento entre cada quadrado azul na prateleira)
