@@ -147,7 +147,7 @@ def threaded_function(arg, arg2):
     DISCONNECT_TOL = 50
 
     while True:    
-        if drone is None:
+        if drone is None and test_mode != 3:
             print("Drone has disconected...")
             COUNT_NONES+=1
             if COUNT_NONES >= DISCONNECT_TOL:
@@ -159,19 +159,22 @@ def threaded_function(arg, arg2):
         blue_img_width  = blue_img.shape[1]
         img_center_x = int(blue_img_width / 2)
         img_center_y = int(blue_img_height / 2)
-
+        print("\n\t\t\t\tPRINT {}".format(1))
         contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
 
         if len(contornos) != 0:
+            print("\n\t\t\t\tPRINT {}".format(2))
             contornos.sort(key=contourArea ,reverse=True) # ordena da maior a menor area
             for contorno in contornos:
                 peri = arcLength(contorno, True)
                 approx = approxPolyDP(contorno, 0.04 * peri, True)
                 # if the shape has 4 vertices, it is either a square or a rectangle
                 if len(approx) == 4:
+                    print("\n\t\t\t\tPRINT {}".format(3))
                     # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
                     (x, y, w, h) = boundingRect(approx)
                     if w * h >= area_limit:
+                        print("\n\t\t\t\tPRINT {}".format(4))
                         show_rect = True
                         tag_center_x = x + w / 2 
                         tag_center_y = y + h / 2 
