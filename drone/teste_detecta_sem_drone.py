@@ -1,3 +1,6 @@
+# from cv2 import imshow, cvtColor, imwrite, inRange, bitwise_and, bitwise_not, addWeighted, arcLength, rectangle, findContours, \
+#     boundingRect, RETR_TREE, CHAIN_APPROX_SIMPLE, COLOR_BGR2GRAY, COLOR_GRAY2BGR, COLOR_BGR2HSV, approxPolyDP, waitKey, \
+#     VideoCapture, destroyAllWindows
 from cv2 import *
 from datetime import datetime, timedelta
 import os
@@ -73,8 +76,11 @@ def threaded_function(arg, arg2):
 
     # TODO: ajustar intervalo de tolerancia entre cada detecção
     last_detect = datetime.now()
-    detection_tolerance = timedelta(seconds=5)
-    area_limit = 6000
+    detection_tolerance = timedelta(seconds=0.5)
+    area_limit = 3000
+    show_rect = False
+    counter_no_rect = 0
+    COUNTER_LIMIT = 250
 
     while True:
         # Parte 1
@@ -83,10 +89,8 @@ def threaded_function(arg, arg2):
         imagem1 = bitwise_and(imagem, imagem, mask=mascara)
 
         # Parte 2
-        mascara2 = bitwise_not(mascara)
         graybgr = cvtColor(imagem, COLOR_BGR2GRAY)
         graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
-        imagem2 = bitwise_and(graybgr, graybgr, mask=mascara2)
 
         # Parte 3
         blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
@@ -102,16 +106,21 @@ def threaded_function(arg, arg2):
                 # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
                 (x, y, w, h) = boundingRect(approx)
                 # TODO: Ajustar valor de "area_limit"
-                if is_square(w, h) and w * h > area_limit and w * h > area:
+                # if is_square(w, h) and w * h > area_limit:
+                if w * h > area_limit:
+                    show_rect = True
                     take_picture(blue_img, x, xRef, y, yRef, xTol, w, h)
                     xRef = x
                     yRef = y
                     wRef = w
                     hRef = h
-                    area = w * h
-                    last_detect = datetime.now() + detection_tolerance  # starts timer
+                    counter_no_rect = 0
+                else:
+                    counter_no_rect+=1
+                if counter_no_rect >= COUNTER_LIMIT:
+                    show_rect = False
 
-        if last_detect > datetime.now():
+        if show_rect:
             rectangle(blue_img, pt1=(xRef, yRef), pt2=(xRef + wRef, yRef + hRef), color=(0, 255, 0), thickness=3)
 
         final_img = blue_img
@@ -124,8 +133,17 @@ curr_dir = os.getcwd()
 pics_dir = os.path.join(curr_dir, "tag-pics")
 tag_counter = 0
 
-light_blue = (90, 50, 38)
+# Old range
+# light_blue = (90, 50, 38)
+# dark_blue = (150, 255, 255)
+
+# Good for pc
+light_blue = (90, 150, 0)
 dark_blue = (150, 255, 255)
+
+# Good for webcam
+# light_blue = (100, 150, 15)
+# dark_blue = (140, 255, 255)
 
 kill_thread = False
 
