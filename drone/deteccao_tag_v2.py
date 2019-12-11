@@ -3,7 +3,7 @@ from cv2 import *
 from datetime import datetime, timedelta
 import os
 # from mov_drone import *
-from extra.tello import Tello
+from tello import Tello
 from time import sleep
 from threading import Timer
 from threading import Thread
@@ -112,13 +112,13 @@ def threaded_function(arg, arg2):
     
     global curr_state
 
-    # TODO: Ajustar valores de tolerância (depende do tamanho da nossa área azul a ser capturada, a que distância elas \
-    #  serão capturadas, espaçamento entre cada quadrado azul na prateleira)
+    # TODO: Ajustar valores de tolerancia (depende do tamanho da nossa area azul a ser capturada, a que distancia elas \
+    #  serao capturadas, espacamento entre cada quadrado azul na prateleira)
     #xTol = 125
     xTol = 75
     yTol = 75
     
-    # TODO: ajustar intervalo de tolerancia entre cada detecção
+    # TODO: ajustar intervalo de tolerancia entre cada deteccao
     detection_tolerance = timedelta(seconds=5)
     last_detect = datetime.now()
     area_limit = 6000
@@ -145,7 +145,7 @@ def threaded_function(arg, arg2):
         # Parte 3
         blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
 
-        # FIXME: Versoes diferentes do OpenCV podem causar problemas aqui na "findContours" (nesse caso foi utilizada a versão 3)
+        # FIXME: Versoes diferentes do OpenCV podem causar problemas aqui na "findContours" (nesse caso foi utilizada a versao 3)
         contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
         area = 0
         
@@ -333,12 +333,12 @@ if __name__ == '__main__':
         delete_picture_files()
 
 
-    # TODO: Ajustar valores de tolerância (depende do tamanho da nossa área azul a ser capturada, a que distância elas \
-    #  serão capturadas, espaçamento entre cada quadrado azul na prateleira)
+    # TODO: Ajustar valores de tolerancia (depende do tamanho da nossa area azul a ser capturada, a que distancia elas \
+    #  serao capturadas, espacamento entre cada quadrado azul na prateleira)
     xTol = 125
     yTol = 75
 
-    # TODO: ajustar intervalo de tolerancia entre cada detecção
+    # TODO: ajustar intervalo de tolerancia entre cada deteccao
     last_detect = datetime.now()
     detection_tolerance = timedelta(seconds=0.5)
     area_limit = 6000
