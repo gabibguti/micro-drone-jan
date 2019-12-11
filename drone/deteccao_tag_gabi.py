@@ -249,18 +249,20 @@ def mov_drone_recorrente():
 
                 curr_state = "wait"
 
-                if(UP_MOVEMENTS < MAX_UP_MOVEMENTS):
-                    UP_MOVEMENTS += 1
-                    movement_drone(0, 0, 10, 0) # try going up
-                    function_timeout = 4
-                else:
-                    curr_state = "turnoff" # give up
+            if(UP_MOVEMENTS < MAX_UP_MOVEMENTS):
+                UP_MOVEMENTS += 1
+                movement_drone(0, 0, 10, 0) # try going up
+                function_timeout = 4
+            else:
+                curr_state = "turnoff" # give up
 
         elif curr_state == "wait":
             function_timeout = 4
             movement_drone(0, 0, 0, 0)
             # calculate where to go
             dist = calculateDistance(CURR_IMG_DATA["x"], CURR_IMG_DATA["y"], CURR_TAG_DATA["x"], CURR_TAG_DATA["y"])
+            diff_x = abs(CURR_TAG_DATA["x"] -  CURR_IMG_DATA["x"])
+            diff_y = abs(CURR_TAG_DATA["y"] -  CURR_IMG_DATA["y"])
             print("Distance from tag to center:", dist, " * ", diff_x, " * ", diff_y)
 
             if (dist < 60):
@@ -329,9 +331,9 @@ new_tag_found = False
 
 if __name__ == '__main__':
 
-    # test_mode = 1 # camera drone, com voo
+    test_mode = 1 # camera drone, com voo
     # test_mode = 2 # camera drone, sem voo
-    test_mode = 3  # camera pc, sem drone
+    # test_mode = 3  # camera pc, sem drone
 
     # Create empty folder to store tag pictures
     if not os.path.exists(PICS_DIR):
@@ -410,3 +412,4 @@ if __name__ == '__main__':
     if test_mode == 3:
         stream.release()
         destroyAllWindows()
+
