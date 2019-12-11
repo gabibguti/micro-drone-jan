@@ -24,6 +24,10 @@ UP_MOVEMENTS = 0
 CURR_TAG_DATA = {"x": 0, "y": 0}
 CURR_IMG_DATA = {"x": 0, "y": 0}
 UPDATE_TAG = False
+TOTAL_DIFF_TOLERANCE = 130
+WIDTH_DIFF_TOLERANCE = 60
+HEIGHT_DIFF_TOLERANCE = 100
+
 
 # LOGS
 def log_drone_battery():
@@ -269,7 +273,7 @@ def mov_drone_recorrente():
             diff_y = abs(CURR_TAG_DATA["y"] -  CURR_IMG_DATA["y"])
             print("Distance from tag to center:", dist, " * ", diff_x, " * ", diff_y)
 
-            if (dist < 60):
+            if (dist < TOTAL_DIFF_TOLERANCE):
                 movement_drone(0, 0, 0, 0)
                 UPDATE_TAG = False
                 curr_state = "detect_qr_code"
@@ -283,12 +287,12 @@ def mov_drone_recorrente():
 
             moveX = 0
             moveZ = 0
-            if(diff_x > 60):
+            if(diff_x > WIDTH_DIFF_TOLERANCE):
                 if(CURR_TAG_DATA["x"] > CURR_IMG_DATA["x"]): # go left
                     moveX = 5
                 else: # go right
                     moveX = -5
-            elif(diff_y > 60):
+            elif(diff_y > HEIGHT_DIFF_TOLERANCE):
                 if(CURR_TAG_DATA["y"] < CURR_IMG_DATA["y"]): # go up
                     moveZ = 5
                 else: # go down
