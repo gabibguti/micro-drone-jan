@@ -69,15 +69,17 @@ def is_square(w, h):
     else: # its a Rectangle
         return False
 
-def filter_blue_color_in_image():
-    global imagem
+def filter_blue_color_in_image(imagem):
     # Parte 1
     imagem_hsv = cvtColor(imagem, COLOR_BGR2HSV)
     mascara = inRange(imagem_hsv, LIGHT_BLUE, DARK_BLUE)
     imagem1 = bitwise_and(imagem, imagem, mask=mascara)
     # Parte 2
+    mascara2 = bitwise_not(mascara)
     graybgr = cvtColor(imagem, COLOR_BGR2GRAY)
     graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
+    imagem2 = bitwise_and(graybgr, graybgr, mask=mascara2)
+
     # Parte 3
     blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
     return blue_img, mascara
@@ -144,14 +146,14 @@ def threaded_function(arg, arg2):
             print("Drone has disconected...")
             break
         
-        blue_img, mascara = filter_blue_color_in_image()
+        blue_img, mascara = filter_blue_color_in_image(imagem)
         blue_img_height = blue_img.shape[0]
         blue_img_width  = blue_img.shape[1]
         img_center_x = int(blue_img_width / 2)
         img_center_y = int(blue_img_height / 2)
 
         contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
-        
+
         if len(contornos) != 0:
             contornos.sort(key=contourArea ,reverse=True) # ordena da maior a menor area
             for contorno in contornos:
@@ -165,20 +167,23 @@ def threaded_function(arg, arg2):
                         tag_center_x = x + w / 2 
                         tag_center_y = y + h / 2 
 
-                        CURR_TAG_DATA["x"] = tag_center_x
-                        CURR_TAG_DATA["y"] = tag_center_y
-                        CURR_IMG_DATA["x"] = img_center_x
-                        CURR_IMG_DATA["y"] = img_center_y
-
                         if(not FOUND_NEW_TAG):
-                            FOUND_NEW_TAG = True                            
+                            FOUND_NEW_TAG = True
+                            # save tag and image data
+                            CURR_TAG_DATA["x"] = tag_center_x
+                            CURR_TAG_DATA["y"] = tag_center_y
+                            CURR_IMG_DATA["x"] = img_center_x
+                            CURR_IMG_DATA["y"] = img_center_y
                             # add green rectangle to identify tag (blue square)
                             rectangle(blue_img, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=3)
                             # save image on local folder
                             save_tag_img(blue_img)
-                            final_img = blue_img.copy()
 
                         break
+
+        # update thread image stream
+        final_img = blue_img.copy()
+
         if kill_thread:
             break
     print("Thread died")
@@ -209,9 +214,11 @@ def mov_drone_recorrente():
         if curr_state == "find_first_tag":
             print("UP_MOVEMENTS: {}".format(UP_MOVEMENTS))
             if(FOUND_NEW_TAG and len(os.listdir(PICS_DIR)) > 0): #when we have a tag picture try to centralize
+                print("FOUNT TAG!")
                 FOUND_NEW_TAG = False
+                UP_MOVEMENTS = 0
                 drone.rc(0, 0, 0, 0) # stop in air
-                curr_state == "centralize"
+                curr_state = "centralize"
             else:        
                 if(UP_MOVEMENTS < MAX_UP_MOVEMENTS):
                     UP_MOVEMENTS += 1
@@ -221,14 +228,35 @@ def mov_drone_recorrente():
                     curr_state = "turnoff" # give up
             
         elif curr_state == "centralize":
+
+            if(FOUND_NEW_TAG):
+                FOUND_NEW_TAG = True
+
             dist = calculateDistance(CURR_IMG_DATA["x"], CURR_IMG_DATA["y"], CURR_TAG_DATA["x"], CURR_TAG_DATA["y"])
-
-            print("Distance from tag to center:", dist)
-
             diff_x = abs(CURR_TAG_DATA["x"] -  CURR_IMG_DATA["x"])
             diff_y = abs(CURR_TAG_DATA["y"] -  CURR_IMG_DATA["y"])
+            print("Distance from tag to center:", dist, " * ", diff_x, " * ", diff_y)
+            function_timeout = 6
 
-            drone.rc(0, 0, 0, 0) # stay still
+            moveX = 0
+            moveZ = 0
+
+            if (dist < 60):
+                curr_state = "detect_qr_code"
+
+            if(diff_x > 60):
+                if(CURR_TAG_DATA["x"] > CURR_IMG_DATA["x"]): # go left
+                    moveX = -5
+                else: # go right
+                    moveX = 5
+            elif(diff_y > 60):
+                if(CURR_TAG_DATA["y"] < CURR_IMG_DATA["y"]): # go up
+                    moveZ = 5
+                else: # go down
+                    moveZ = -5
+
+            print("drone going: right/left: {} up/down: {}".format(moveX, moveZ))
+            drone.rc(moveX, 0, moveZ, 0)
 
 #            if dentro_regiao():
 #                curr_state = "detect_qr_code"
