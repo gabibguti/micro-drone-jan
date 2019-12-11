@@ -70,21 +70,6 @@ def is_square(w, h):
     else: # its a Rectangle
         return False
 
-def filter_blue_color_in_image(imagem):
-    # Parte 1
-    imagem_hsv = cvtColor(imagem, COLOR_BGR2HSV)
-    mascara = inRange(imagem_hsv, LIGHT_BLUE, DARK_BLUE)
-    imagem1 = bitwise_and(imagem, imagem, mask=mascara)
-    # Parte 2
-    mascara2 = bitwise_not(mascara)
-    graybgr = cvtColor(imagem, COLOR_BGR2GRAY)
-    graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
-    imagem2 = bitwise_and(graybgr, graybgr, mask=mascara2)
-
-    # Parte 3
-    blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
-    return blue_img, mascara
-
 # DRONE MOVEMENT
 def iniciar_drone():
     global drone
