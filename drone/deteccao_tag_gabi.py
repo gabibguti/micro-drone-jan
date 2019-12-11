@@ -158,8 +158,15 @@ def threaded_function(arg, arg2):
                     # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
                     (x, y, w, h) = boundingRect(approx)
                     if w * h >= area_limit:
+
+                        tag_dict['blueX'] = x
+                        tag_dict['blueY'] = y
+                        tag_dict['blueW'] = w
+                        tag_dict['blueH'] = h
+
                         show_rect = True
                         counter_no_rect = 0
+
                         tag_center_x = x + w / 2
                         tag_center_y = y + h / 2
 
@@ -174,18 +181,18 @@ def threaded_function(arg, arg2):
                             rectangle(blue_img, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=3)
                             # save image on local folder
                             save_tag_img(blue_img)
-                    else:
-                        counter_no_rect += 1
-                        break
+                    break
+        else:
+            counter_no_rect += 1
 
-                    if counter_no_rect >= COUNTER_LIMIT:
-                        show_rect = False
+        if counter_no_rect >= COUNTER_LIMIT:
+            show_rect = False
 
-                    if show_rect:
-                        rectangle(blue_img, pt1=(tag_dict['blueX'], tag_dict['blueY']),
-                                  pt2=(tag_dict['blueX'] + tag_dict['blueW'],
-                                       tag_dict['blueY'] + tag_dict['blueH']),
-                                  color=(0, 255, 0), thickness=3)
+        if show_rect:
+            rectangle(blue_img, pt1=(tag_dict['blueX'], tag_dict['blueY']),
+                      pt2=(tag_dict['blueX'] + tag_dict['blueW'],
+                           tag_dict['blueY'] + tag_dict['blueH']),
+                      color=(0, 255, 0), thickness=3)
 
         # update thread image stream
         final_img = blue_img.copy()
@@ -207,7 +214,7 @@ routine_states = [
 ]
 
 def movement_drone(x, y, z, k):
-    if(teste_mode == 2):
+    if(test_mode == 1):
         drone.rc(x, y, z, k)
 
 def mov_drone_recorrente():
@@ -301,8 +308,8 @@ new_tag_found = False
 if __name__ == '__main__':
 
     # test_mode = 1 # camera drone, com voo
-    test_mode = 2 # camera drone, sem voo
-    # test_mode = 3  # camera pc, sem drone
+    # test_mode = 2 # camera drone, sem voo
+    test_mode = 3  # camera pc, sem drone
 
     # Create empty folder to store tag pictures
     if not os.path.exists(PICS_DIR):
@@ -343,7 +350,7 @@ if __name__ == '__main__':
         timer = Timer(5, log_drone_battery)
         timer.start()
 
-    if test_mode == 1:
+    if test_mode != 3:
         # Timer moves
         timer_mov_drone = Timer(0.1, mov_drone_recorrente)
         timer_mov_drone.start()
