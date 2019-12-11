@@ -7,7 +7,7 @@ from tello import Tello
 from time import sleep
 from threading import Timer
 from threading import Thread
-import math  
+import math
 from simple_functions import *
 
 # GLOBALS
@@ -37,16 +37,16 @@ def log_drone_battery():
 def log_drone_state():
     global state_timer
     wait_sec = 3
-    if curr_state:    
-        print("Drone's current state is: ", curr_state)            
+    if curr_state:
+        print("Drone's current state is: ", curr_state)
     state_timer = Timer(wait_sec,log_drone_state)
     state_timer.start()
 
 # UTILS
 
-def calculateDistance(x1,y1,x2,y2):  
-     dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)  
-     return dist  
+def calculateDistance(x1,y1,x2,y2):
+     dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+     return dist
 
 def delete_picture_files():
     for tag_picture in os.listdir(PICS_DIR):
@@ -115,7 +115,7 @@ def threaded_function(arg, arg2):
     #xTol = 125
     xTol = 75
     yTol = 75
-    
+
     # Melhorias rect verde
     area_limit = 3000
     show_rect = False
@@ -130,14 +130,16 @@ def threaded_function(arg, arg2):
     COUNT_NONES = 0
     DISCONNECT_TOL = 50
 
-    while True:    
+    tag_dict = {"blueX":0, "blueY":0, "blueW":0, "blueH":0}
+
+    while True:
         if drone is None and test_mode != 3:
             print("Drone has disconected...")
             COUNT_NONES+=1
             if COUNT_NONES >= DISCONNECT_TOL:
                 break
             continue
-        
+
         blue_img, mascara = apply_mask(imagem, LIGHT_BLUE, DARK_BLUE)
         blue_img_height = blue_img.shape[0]
         blue_img_width  = blue_img.shape[1]
@@ -156,8 +158,9 @@ def threaded_function(arg, arg2):
                     (x, y, w, h) = boundingRect(approx)
                     if w * h >= area_limit:
                         show_rect = True
-                        tag_center_x = x + w / 2 
-                        tag_center_y = y + h / 2 
+                        counter_no_rect = 0
+                        tag_center_x = x + w / 2
+                        tag_center_y = y + h / 2
 
                         if(not FOUND_NEW_TAG):
                             FOUND_NEW_TAG = True
@@ -186,15 +189,16 @@ def threaded_function(arg, arg2):
                         break
                     else:
                         counter_no_rect += 1
+                        break
+
                     if counter_no_rect >= COUNTER_LIMIT:
                         show_rect = False
 
-                    # if show_rect:
-                    #     rectangle(blue_img, pt1=(xRef, yRef), pt2=(xRef + wRef, yRef + hRef), color=(0, 255, 0), thickness=3)
-                    # if is_new_square(xRef, xOld, yRef, yOld, xTol) and last_detect < datetime.now():
-                    #     new_tag_found = True ## CHECK HERE
-                    #     take_picture(blue_img, xRef, yRef, wRef, hRef)
-                    #     last_detect = datetime.now() + detection_tolerance  # starts timer
+                    if show_rect:
+                        rectangle(blue_img, pt1=(tag_dict['blueX'], tag_dict['blueY']),
+                                  pt2=(tag_dict['blueX'] + tag_dict['blueW'],
+                                       tag_dict['blueY'] + tag_dict['blueH']),
+                                  color=(0, 255, 0), thickness=3)
 
         # update thread image stream
         final_img = blue_img.copy()
@@ -227,9 +231,9 @@ def mov_drone_recorrente():
     global new_tag_found
 
     function_timeout = 0.5
-    
+
     if drone is not None:
-        
+
         if curr_state == "find_first_tag":
             print("UP_MOVEMENTS: {}".format(UP_MOVEMENTS))
             if(FOUND_NEW_TAG and len(os.listdir(PICS_DIR)) > 0): #when we have a tag picture try to centralize
@@ -238,7 +242,7 @@ def mov_drone_recorrente():
                 UP_MOVEMENTS = 0
                 
                 curr_state = "wait"
-            else:        
+
                 if(UP_MOVEMENTS < MAX_UP_MOVEMENTS):
                     UP_MOVEMENTS += 1
                     movement_drone(0, 0, 10, 0) # try going up
@@ -290,13 +294,13 @@ def mov_drone_recorrente():
 #                curr_state = "detect_qr_code"
 #            else:
 #                centralizaDrone()
-        
+
         elif curr_state == "detect_qr_code":
             curr_state = "process_qr_code"
-        
+
         elif curr_state == "process_qr_code":
             curr_state = "find_next_tag"
-        
+
         elif curr_state == "find_next_tag":
             if new_tag_found:
                 curr_state = "centralize"
@@ -304,13 +308,13 @@ def mov_drone_recorrente():
             else:
                 movement_drone(7, 0, 0, 0)
 
-        elif curr_state == "turnoff":         
+        elif curr_state == "turnoff":
             para()
 
         else:
             # Transition State, do nothing
             pass
-        
+
     timer_mov_drone = Timer(function_timeout, mov_drone_recorrente) # 500 ms
     timer_mov_drone.start()
 
@@ -359,7 +363,7 @@ if __name__ == '__main__':
             sleep(DRONE_TIMEOUT)
 
         # Time nao morre
-        timer = Timer(5, DRONE_TIMEOUT)
+        timer = Timer(5, log_drone_battery)
         timer.start()
 
     if test_mode == 1:
