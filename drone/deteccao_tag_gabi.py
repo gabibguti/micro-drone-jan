@@ -186,6 +186,7 @@ def threaded_function(arg, arg2):
                             TAG_COUNTER += 1
                             save_tag_img(blue_img, TAG_COUNTER)
                         elif(UPDATE_TAG):
+                            UPDATE_TAG = False
                             # save tag and image data
                             CURR_TAG_DATA["x"] = tag_center_x
                             CURR_TAG_DATA["y"] = tag_center_y
