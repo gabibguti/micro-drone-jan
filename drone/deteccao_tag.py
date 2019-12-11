@@ -17,15 +17,6 @@ def dentro_regiao():
                 return True
     return False
 
-def apply_mask(imagem):
-    imagem_hsv = cvtColor(imagem, COLOR_BGR2HSV)
-    mascara = inRange(imagem_hsv, light_blue, dark_blue)
-    imagem1 = bitwise_and(imagem, imagem, mask=mascara)
-    graybgr = cvtColor(imagem, COLOR_BGR2GRAY)
-    graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
-    blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
-    return blue_img, mascara
-
 def movHoriz(xRef, xReg):
     xDist = (xReg-xRef)*4/3
     drone.goto(int(xDist)*10,0,0,10)
@@ -37,10 +28,6 @@ def movVert(yRef, yReg):
     sleep(drone_interval)
 
 def centralizaDrone():
-    #drone.goto(0,0,0,10)
-    #sleep(drone_interval)
-    #print("\t[DIF] xDif:{}, yDif:{}".format(xDif, yDif))
-    #drone.goto(0,30,0,10)
     velX = 0
     velZ = 0
     if (xDif < -100):
@@ -53,25 +40,6 @@ def centralizaDrone():
         velZ = -10
     drone.rc(velX, 0, velZ, 0)
 
-def is_square(w, h):
-    # A square will have an aspect ratio that is approximately equal to one, otherwise, the shape is a rectangle
-    ar = w / float(h)
-    if ar >= 0.95 and ar <= 1.05: # Its a Square
-        return True
-    else: # its a Rectangle
-        return False
-
-def is_new_square(x, xRef, y, yRef, tol):
-    xTol = tol
-    yTol = tol
-    if (x > xRef - xTol and x < xRef + xTol) and (y > yRef - yTol and y < yRef + yTol):
-        return False
-    return True
-
-def delete_picture_files():
-    for tag_picture in os.listdir(pics_dir):
-        os.remove(os.path.join(pics_dir,tag_picture))
-
 def take_picture(img, xRef, yRef, wRef, hRef):
     global tag_counter
     print("\n\tTaking Picture! (At: {})".format(datetime.now()))
@@ -82,8 +50,6 @@ def take_picture(img, xRef, yRef, wRef, hRef):
     if not os.path.exists(tag_picture):
         imwrite(tag_picture, img)
         tag_counter += 1
-
-
 
 def threaded_function(arg, arg2):
     global imagem
@@ -119,17 +85,19 @@ def threaded_function(arg, arg2):
     counter_no_rect = 0
     COUNTER_LIMIT = 250
 
+    light_blue = (90, 150, 0)
+    dark_blue = (150, 255, 255)
+
     while True:
         # If no picture taken, then no tag found yet
         if curr_state == "find_first_tag" and len(os.listdir(pics_dir)) > 0:
             curr_state = "centralize"
 
-        # print(imagem)
         if not len(imagem) > 0:
             continue
 
         # Mascaras
-        blue_img, mascara = apply_mask(imagem)
+        blue_img, mascara = apply_mask(imagem, light_blue, dark_blue)
 
         # FIXME: Versoes diferentes do OpenCV podem causar problemas aqui na "findContours" (nesse caso foi utilizada a versao 3)
         contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
@@ -149,7 +117,6 @@ def threaded_function(arg, arg2):
                     # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
                     (x, y, w, h) = boundingRect(approx)
                     if w * h >= area_limit:
-                        take_picture(blue_img, xRef, yRef, wRef, hRef) # TODO: Change it so it wont take pictures all the time
                         show_rect = True
                         xRef = x
                         yRef = y
@@ -169,7 +136,6 @@ def threaded_function(arg, arg2):
 
         if show_rect:
             rectangle(blue_img, pt1=(xRef, yRef), pt2=(xRef + wRef, yRef + hRef), color=(0, 255, 0), thickness=3)
-
 
         if is_new_square(xRef, xOld, yRef, yOld, xTol) and last_detect < datetime.now():
             new_tag_found = True ## CHECK HERE
@@ -302,9 +268,9 @@ new_tag_found = False
 ###################### GLOBAL VARS ##############################
 
 if __name__ == '__main__':
-
-    light_blue = (90, 150, 0)
-    dark_blue = (150, 255, 255)
+    # test_mode = 1 # camera drone, com voo
+    # test_mode = 2 # camera drone, sem voo
+    test_mode = 3 # camera pc, sem drone
 
     # Reference Variables
     xRef = 0
@@ -318,8 +284,7 @@ if __name__ == '__main__':
     if not os.path.exists(pics_dir):
         os.makedirs(pics_dir)
     else:
-        # Delete all files boefore a new session
-        delete_picture_files()
+        delete_picture_files(pics_dir) # Delete all files before a new session
 
     # TODO: Ajustar valores de tolerancia (depende do tamanho da nossa area azul a ser capturada, a que distancia elas \
     #  serao capturadas, espacamento entre cada quadrado azul na prateleira)
@@ -339,30 +304,47 @@ if __name__ == '__main__':
     drone_end = datetime.now() + timedelta(seconds=50)
 
     # Drone start
-    drone = Tello("TELLO-C7AC08", test_mode=False)
-    drone.inicia_cmds()
-    sleep(drone_interval)
-    # drone.takeoff()
-    sleep(drone_interval)
+    if test_mode != 3:
+        drone = Tello("TELLO-C7AC08", test_mode=False)
+        drone.inicia_cmds()
+        sleep(drone_interval)
 
-    # Timers:
-    timer = Timer(5,nao_morre)
-    timer.start()
-    # timer_mov_drone = Timer(0.1, mov_drone_recorrente)
-    # timer_mov_drone.start()
+        if test_mode == 1:
+            drone.takeoff()
+            sleep(drone_interval)
+
+        # Time nao morre
+        timer = Timer(5,nao_morre)
+        timer.start()
+
+    if test_mode == 1:
+        # Timer moves
+        timer_mov_drone = Timer(0.1, mov_drone_recorrente)
+        timer_mov_drone.start()
+
+    # State machine Timer
     state_timer = Timer(1.5,print_state)
     state_timer.start()
     
     # First capture to initialize thread
-    imagem = drone.current_image
+    if test_mode == 3:
+        drone = None
+        stream = VideoCapture(0)
+        _, imagem = stream.read()
+    else:
+        imagem = drone.current_image
     final_img = imagem.copy()
+
     thread = Thread(target=threaded_function, args=(5, 2,))
     thread.start()
 
     while True:
-        imagem = drone.current_image
+        if test_mode == 3:
+            _, imagem = stream.read()
+        else:
+            imagem = drone.current_image
 
-        imshow("Main Vison", imagem)
+        # imshow("Main Vison", imagem)
         imshow("Thread Vison", final_img)
         # Mostra a imagem durante 1 milissegundo e interrompe loop quando tecla q for pressionada
         if waitKey(20) & 0xFF == ord("q"):
@@ -370,3 +352,6 @@ if __name__ == '__main__':
 
     kill_thread = True
     thread.join()
+    if test_mode == 3:
+        stream.release()
+        destroyAllWindows()

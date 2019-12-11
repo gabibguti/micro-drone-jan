@@ -3,34 +3,7 @@ from datetime import datetime, timedelta
 import os
 from time import sleep
 from threading import Thread
-
-def is_square(w, h):
-    # A square will have an aspect ratio that is approximately equal to one, otherwise, the shape is a rectangle
-    ar = w / float(h)
-    if ar >= 0.95 and ar <= 1.05: # Its a Square
-        return True
-    else: # its a Rectangle
-        return False
-
-def is_new_square(x, xRef, y, yRef, tol):
-    xTol = tol
-    yTol = tol
-    if (x > xRef - xTol and x < xRef + xTol) and (y > yRef - yTol and y < yRef + yTol):
-        return False
-    return True
-
-def delete_picture_files():
-    for tag_picture in os.listdir(pics_dir):
-        os.remove(os.path.join(pics_dir,tag_picture))
-
-def apply_mask(imagem):
-    imagem_hsv = cvtColor(imagem, COLOR_BGR2HSV)
-    mascara = inRange(imagem_hsv, light_blue, dark_blue)
-    imagem1 = bitwise_and(imagem, imagem, mask=mascara)
-    graybgr = cvtColor(imagem, COLOR_BGR2GRAY)
-    graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
-    blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
-    return blue_img, mascara
+from simple_functions import *
 
 def take_picture(img, x, xRef, y, yRef, xTol, w, h):
     global tag_counter
@@ -63,11 +36,7 @@ def threaded_function(arg, arg2):
     # TODO: Ajustar valores de tolerância (depende do tamanho da nossa área azul a ser capturada, a que distância elas \
     #  serão capturadas, espaçamento entre cada quadrado azul na prateleira)
     xTol = 125
-    yTol = 75
 
-    # TODO: ajustar intervalo de tolerancia entre cada detecção
-    # last_detect = datetime.now()
-    # detection_tolerance = timedelta(seconds=0.5)
     area_limit = 3000
     show_rect = False
     counter_no_rect = 0
@@ -75,7 +44,7 @@ def threaded_function(arg, arg2):
 
     while True:
         # Mascaras
-        blue_img, mascara = apply_mask(imagem)
+        blue_img, mascara = apply_mask(imagem, light_blue, dark_blue)
 
         # FIXME: Versoes diferentes do OpenCV podem causar problemas aqui na "findContours" (nesse caso foi utilizada a versão 3)
         contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
@@ -88,7 +57,6 @@ def threaded_function(arg, arg2):
                 # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
                 (x, y, w, h) = boundingRect(approx)
                 # TODO: Ajustar valor de "area_limit"
-                # if is_square(w, h) and w * h > area_limit:
                 if w * h > area_limit:
                     show_rect = True
                     take_picture(blue_img, x, xRef, y, yRef, xTol, w, h)
@@ -115,10 +83,6 @@ curr_dir = os.getcwd()
 pics_dir = os.path.join(curr_dir, "tag-pics")
 tag_counter = 0
 
-# Old range
-# light_blue = (90, 50, 38)
-# dark_blue = (150, 255, 255)
-
 # Good for pc
 light_blue = (90, 150, 0)
 dark_blue = (150, 255, 255)
@@ -128,13 +92,12 @@ dark_blue = (150, 255, 255)
 # dark_blue = (140, 255, 255)
 
 kill_thread = False
-
 if __name__ == '__main__':
     # Asserts or creates directory where tags pictures will be storage
     if not os.path.exists(pics_dir):
         os.makedirs(pics_dir)
     else:
-        delete_picture_files()
+        delete_picture_files(pics_dir)
 
     stream = VideoCapture(0)
 
