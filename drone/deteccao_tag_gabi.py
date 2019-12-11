@@ -146,7 +146,9 @@ def threaded_function(arg, arg2):
     COUNT_NONES = 0
     DISCONNECT_TOL = 50
 
-    while True:    
+    tag_dict = {"blueX":0, "blueY":0, "blueW":0, "blueH":0}
+
+    while True:
         if drone is None and test_mode != 3:
             print("Drone has disconected...")
             COUNT_NONES+=1
@@ -159,22 +161,18 @@ def threaded_function(arg, arg2):
         blue_img_width  = blue_img.shape[1]
         img_center_x = int(blue_img_width / 2)
         img_center_y = int(blue_img_height / 2)
-        print("\n\t\t\t\tPRINT {}".format(1))
         contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
 
         if len(contornos) != 0:
-            print("\n\t\t\t\tPRINT {}".format(2))
             contornos.sort(key=contourArea ,reverse=True) # ordena da maior a menor area
             for contorno in contornos:
                 peri = arcLength(contorno, True)
                 approx = approxPolyDP(contorno, 0.04 * peri, True)
                 # if the shape has 4 vertices, it is either a square or a rectangle
                 if len(approx) == 4:
-                    print("\n\t\t\t\tPRINT {}".format(3))
                     # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
                     (x, y, w, h) = boundingRect(approx)
                     if w * h >= area_limit:
-                        print("\n\t\t\t\tPRINT {}".format(4))
                         show_rect = True
                         tag_center_x = x + w / 2 
                         tag_center_y = y + h / 2 
@@ -187,7 +185,7 @@ def threaded_function(arg, arg2):
                             CURR_IMG_DATA["x"] = img_center_x
                             CURR_IMG_DATA["y"] = img_center_y
                             # add green rectangle to identify tag (blue square)
-                            rectangle(blue_img, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=3)
+                            # rectangle(blue_img, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=3)
                             # save image on local folder
                             save_tag_img(blue_img)
 
@@ -197,12 +195,11 @@ def threaded_function(arg, arg2):
                     if counter_no_rect >= COUNTER_LIMIT:
                         show_rect = False
 
-                    # if show_rect:
-                    #     rectangle(blue_img, pt1=(xRef, yRef), pt2=(xRef + wRef, yRef + hRef), color=(0, 255, 0), thickness=3)
-                    # if is_new_square(xRef, xOld, yRef, yOld, xTol) and last_detect < datetime.now():
-                    #     new_tag_found = True ## CHECK HERE
-                    #     take_picture(blue_img, xRef, yRef, wRef, hRef)
-                    #     last_detect = datetime.now() + detection_tolerance  # starts timer
+                    if show_rect:
+                        rectangle(blue_img, pt1=(tag_dict['blueX'], tag_dict['blueY']),
+                                  pt2=(tag_dict['blueX'] + tag_dict['blueW'],
+                                       tag_dict['blueY'] + tag_dict['blueH']),
+                                  color=(0, 255, 0), thickness=3)
 
         # update thread image stream
         final_img = blue_img.copy()
