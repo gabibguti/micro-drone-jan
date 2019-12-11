@@ -1,26 +1,8 @@
-# from cv2 import imshow, cvtColor, imwrite, inRange, bitwise_and, bitwise_not, addWeighted, arcLength, rectangle, findContours, \
-#     boundingRect, RETR_TREE, CHAIN_APPROX_SIMPLE, COLOR_BGR2GRAY, COLOR_GRAY2BGR, COLOR_BGR2HSV, approxPolyDP, waitKey, \
-#     VideoCapture, destroyAllWindows
 from cv2 import *
 from datetime import datetime, timedelta
 import os
 from time import sleep
 from threading import Thread
-from time import sleep
-
-# def dentroRegiao(img, xRef, yRef, wRef, hRef):
-#     wReg = int(img.shape[0] * 2 / 3)
-#     xReg = int(img.shape[0] / 6)
-#     hReg = int(img.shape[1] * 2 / 3)
-#     yReg = int(img.shape[1] / 6)
-#
-#     areaRef = wRef * hRef
-#     print("[REG] x:{}, y:{}, h:{}, l:{}, area:{}\n".format(xReg, yReg, wReg, hReg, areaRef))
-#     if (xReg < xRef) and (yReg < yRef):
-#         if (xReg + wReg) > (xRef + wRef):
-#             if (yReg + hReg) > (yRef + hRef):
-#                 return True
-#     return False
 
 def is_square(w, h):
     # A square will have an aspect ratio that is approximately equal to one, otherwise, the shape is a rectangle
