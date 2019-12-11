@@ -144,22 +144,18 @@ def threaded_function(arg, arg2):
         blue_img_width  = blue_img.shape[1]
         img_center_x = int(blue_img_width / 2)
         img_center_y = int(blue_img_height / 2)
-        print("\n\t\t\t\tPRINT {}".format(1))
         contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
 
         if len(contornos) != 0:
-            print("\n\t\t\t\tPRINT {}".format(2))
             contornos.sort(key=contourArea ,reverse=True) # ordena da maior a menor area
             for contorno in contornos:
                 peri = arcLength(contorno, True)
                 approx = approxPolyDP(contorno, 0.04 * peri, True)
                 # if the shape has 4 vertices, it is either a square or a rectangle
                 if len(approx) == 4:
-                    print("\n\t\t\t\tPRINT {}".format(3))
                     # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
                     (x, y, w, h) = boundingRect(approx)
                     if w * h >= area_limit:
-                        print("\n\t\t\t\tPRINT {}".format(4))
                         show_rect = True
                         tag_center_x = x + w / 2 
                         tag_center_y = y + h / 2 
@@ -300,8 +296,8 @@ new_tag_found = False
 if __name__ == '__main__':
 
     # test_mode = 1 # camera drone, com voo
-    # test_mode = 2 # camera drone, sem voo
-    test_mode = 3  # camera pc, sem drone
+    test_mode = 2 # camera drone, sem voo
+    # test_mode = 3  # camera pc, sem drone
 
     # Create empty folder to store tag pictures
     if not os.path.exists(PICS_DIR):
@@ -329,7 +325,8 @@ if __name__ == '__main__':
 
     # Drone start
     if test_mode != 3:
-        drone = Tello("TELLO-C7AC08", test_mode=False)
+        #drone = Tello("TELLO-C7AC08", test_mode=False)
+        drone = Tello("TELLO-D023AE", test_mode=False)
         drone.inicia_cmds()
         sleep(DRONE_TIMEOUT)
 
