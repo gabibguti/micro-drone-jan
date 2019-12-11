@@ -204,6 +204,9 @@ routine_states = [
     "turnoff"
 ]
 
+def movement_drone(x, y, z, k):
+    if(teste_mode == 2):
+        drone.rc(x, y, z, k)
 
 def mov_drone_recorrente():
     global FOUND_NEW_TAG, UP_MOVEMENTS, MAX_UP_MOVEMENTS
@@ -221,12 +224,12 @@ def mov_drone_recorrente():
                 print("FOUNT TAG!")
                 FOUND_NEW_TAG = False
                 UP_MOVEMENTS = 0
-                drone.rc(0, 0, 0, 0) # stop in air
+                
                 curr_state = "centralize"
             else:        
                 if(UP_MOVEMENTS < MAX_UP_MOVEMENTS):
                     UP_MOVEMENTS += 1
-                    drone.rc(0, 0, 10, 0) # try going up
+                    movement_drone(0, 0, 10, 0) # try going up
                     function_timeout = 4
                 else:
                     curr_state = "turnoff" # give up
@@ -260,7 +263,7 @@ def mov_drone_recorrente():
                     moveZ = -5
 
             print("drone going: left/right: {} up/down: {}".format(moveX, moveZ))
-            drone.rc(moveX, 0, moveZ, 0)
+            movement_drone(moveX, 0, moveZ, 0)
 
 #            if dentro_regiao():
 #                curr_state = "detect_qr_code"
@@ -278,7 +281,7 @@ def mov_drone_recorrente():
                 curr_state = "centralize"
                 new_tag_found = False
             else:
-                drone.rc(7, 0, 0, 0)
+                movement_drone(7, 0, 0, 0)
 
         elif curr_state == "turnoff":         
             para()
