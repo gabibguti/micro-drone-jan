@@ -17,6 +17,7 @@ FOUND_NEW_TAG = False
 TAG_COUNTER = 0
 CURR_DIR = os.getcwd()
 PICS_DIR = os.path.join(CURR_DIR, "tag-pics")
+QR_CODE_DIR = os.chdir("./../qrcode-images")
 DRONE_TIMEOUT = 7
 curr_state = None
 MAX_UP_MOVEMENTS = 10
@@ -62,6 +63,11 @@ def save_tag_img(img, tag_id):
     tag_path = os.path.join(PICS_DIR, tag_img_label + ".png")
     imwrite(tag_path, img)
 
+def save_qr_code(img, tag_id):
+    qrcode_label = "qrcode_" + str(tag_id)
+    qr_code_path = os.path.join(QR_CODE_DIR, qrcode_label + ".png")
+    imwrite(qr_code_path, img)
+
 # IMAGE TREATMENT
 
 def is_square(w, h):
@@ -85,27 +91,6 @@ def para():
     drone.land()
     sleep(DRONE_TIMEOUT)
     drone = None
-
-def dentro_regiao():
-    global xDif
-    global yDif
-    if (xDif > -100) and (xDif < 100):
-        if (yDif > -100) and (yDif < 100):
-                return True
-    return False
-
-def centralizaDrone():
-    velX = 0
-    velZ = 0
-    if (xDif < -100):
-        velX = 10
-    elif (xDif > 100):
-        velX = -10
-    if (yDif < -100):
-        velZ = 10
-    elif (yDif > 100):
-        velZ = -10
-    drone.rc(velX, 0, velZ, 0)
 
 def threaded_function(arg, arg2):
     global FOUND_NEW_TAG, CURR_TAG_DATA, CURR_IMG_DATA, UPDATE_TAG
@@ -227,7 +212,7 @@ routine_states = [
     "find_first_tag", # go up until find a tag
     "centralize", # right after finding a tag, centrilze drone
     "wait",
-    "detect_qr_code",
+    "centralize_qr_code",
     "process_qr_code",
     "find_next_tag", # after processing the QR Code move right until find another tag
     "goto_next_floor", # go up OR down after scanned all tags from one level
@@ -276,7 +261,7 @@ def mov_drone_recorrente():
             if (dist < TOTAL_DIFF_TOLERANCE):
                 movement_drone(0, 0, 0, 0)
                 UPDATE_TAG = False
-                curr_state = "detect_qr_code"
+                curr_state = "centralize_qr_code"
             else:
                 curr_state = "centralize"
 
@@ -306,23 +291,19 @@ def mov_drone_recorrente():
             # go back to wait
             curr_state = "wait"
 
-#            if dentro_regiao():
-#                curr_state = "detect_qr_code"
-#            else:
-#                centralizaDrone()
-
-        elif curr_state == "detect_qr_code":
+        elif curr_state == "centralize_qr_code":
+            function_timeout = 4
+            movement_drone(0, 0, 10, 0)
             curr_state = "process_qr_code"
 
         elif curr_state == "process_qr_code":
-            curr_state = "find_next_tag"
+            movement_drone(0, 0, 0, 0)
+            sleep(1)
+            save_qr_code(imagem, TAG_COUNTER)
+            curr_state = "turnoff"
 
         elif curr_state == "find_next_tag":
-            if new_tag_found:
-                curr_state = "centralize"
-                new_tag_found = False
-            else:
-                movement_drone(7, 0, 0, 0)
+            pass
 
         elif curr_state == "turnoff":
             para()
