@@ -23,6 +23,15 @@ def delete_picture_files():
     for tag_picture in os.listdir(pics_dir):
         os.remove(os.path.join(pics_dir,tag_picture))
 
+def apply_mask(imagem):
+    imagem_hsv = cvtColor(imagem, COLOR_BGR2HSV)
+    mascara = inRange(imagem_hsv, light_blue, dark_blue)
+    imagem1 = bitwise_and(imagem, imagem, mask=mascara)
+    graybgr = cvtColor(imagem, COLOR_BGR2GRAY)
+    graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
+    blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
+    return blue_img, mascara
+
 def take_picture(img, x, xRef, y, yRef, xTol, w, h):
     global tag_counter
     # FIXME: Por enquanto, basta obter novos valores para as posições X e Y diferentes dos últimos \
@@ -57,25 +66,16 @@ def threaded_function(arg, arg2):
     yTol = 75
 
     # TODO: ajustar intervalo de tolerancia entre cada detecção
-    last_detect = datetime.now()
-    detection_tolerance = timedelta(seconds=0.5)
+    # last_detect = datetime.now()
+    # detection_tolerance = timedelta(seconds=0.5)
     area_limit = 3000
     show_rect = False
     counter_no_rect = 0
     COUNTER_LIMIT = 250
 
     while True:
-        # Parte 1
-        imagem_hsv = cvtColor(imagem, COLOR_BGR2HSV)
-        mascara = inRange(imagem_hsv, light_blue, dark_blue)
-        imagem1 = bitwise_and(imagem, imagem, mask=mascara)
-
-        # Parte 2
-        graybgr = cvtColor(imagem, COLOR_BGR2GRAY)
-        graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
-
-        # Parte 3
-        blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
+        # Mascaras
+        blue_img, mascara = apply_mask(imagem)
 
         # FIXME: Versoes diferentes do OpenCV podem causar problemas aqui na "findContours" (nesse caso foi utilizada a versão 3)
         contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
@@ -156,3 +156,4 @@ if __name__ == '__main__':
     thread.join()
     stream.release()
     destroyAllWindows()
+
