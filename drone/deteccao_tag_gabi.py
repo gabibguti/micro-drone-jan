@@ -159,6 +159,7 @@ def threaded_function(arg, arg2):
                     (x, y, w, h) = boundingRect(approx)
                     if w * h >= area_limit:
                         show_rect = True
+                        counter_no_rect = 0
                         tag_center_x = x + w / 2 
                         tag_center_y = y + h / 2 
 
@@ -170,13 +171,13 @@ def threaded_function(arg, arg2):
                             CURR_IMG_DATA["x"] = img_center_x
                             CURR_IMG_DATA["y"] = img_center_y
                             # add green rectangle to identify tag (blue square)
-                            # rectangle(blue_img, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=3)
+                            rectangle(blue_img, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=3)
                             # save image on local folder
                             save_tag_img(blue_img)
-
-                        break
                     else:
                         counter_no_rect += 1
+                        break
+
                     if counter_no_rect >= COUNTER_LIMIT:
                         show_rect = False
 
@@ -222,12 +223,12 @@ def mov_drone_recorrente():
                 print("FOUNT TAG!")
                 FOUND_NEW_TAG = False
                 UP_MOVEMENTS = 0
-                drone.rc(0, 0, 0, 0) # stop in air
+                # drone.rc(0, 0, 0, 0) # stop in air
                 curr_state = "centralize"
             else:        
                 if(UP_MOVEMENTS < MAX_UP_MOVEMENTS):
                     UP_MOVEMENTS += 1
-                    drone.rc(0, 0, 10, 0) # try going up
+                    # drone.rc(0, 0, 10, 0) # try going up
                     function_timeout = 4
                 else:
                     curr_state = "turnoff" # give up
@@ -261,7 +262,7 @@ def mov_drone_recorrente():
                     moveZ = -5
 
             print("drone going: left/right: {} up/down: {}".format(moveX, moveZ))
-            drone.rc(moveX, 0, moveZ, 0)
+            # drone.rc(moveX, 0, moveZ, 0)
 
 #            if dentro_regiao():
 #                curr_state = "detect_qr_code"
@@ -279,8 +280,8 @@ def mov_drone_recorrente():
                 curr_state = "centralize"
                 new_tag_found = False
             else:
-                drone.rc(7, 0, 0, 0)
-
+                # drone.rc(7, 0, 0, 0)
+                pass
         elif curr_state == "turnoff":         
             para()
 
@@ -336,7 +337,7 @@ if __name__ == '__main__':
             sleep(DRONE_TIMEOUT)
 
         # Time nao morre
-        timer = Timer(5, DRONE_TIMEOUT)
+        timer = Timer(5, log_drone_battery)
         timer.start()
 
     if test_mode == 1:
