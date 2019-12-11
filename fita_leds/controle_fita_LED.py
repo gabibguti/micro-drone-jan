@@ -1,10 +1,29 @@
 import serial
+import sys
+sys.path.insert(0, '../fita_leds/')
+import app
+import random
 
 ARDUINO = None
+package_id = 1000
 
 def start_leds():
   global ARDUINO
-  ARDUINO = serial.Serial('/dev/cu.usbmodem144101', 9600)
+  global package_id
+  ARDUINO = serial.Serial('COM31', 9600)
+  while True:
+      texto_recebido = ARDUINO.readline().decode().strip()
+      print(texto_recebido)
+      if texto_recebido != "":
+          args = texto_recebido.split(' ')
+          if args[0] == 'novo':
+              date = "0000-00-00"
+              app.add_package(str(package_id), date, args[1], args[2])
+              package_id += 1
+              print('novo ' + args[1] + " " +  args[2])
+          elif args[0] == 'saiu':
+              app.remove_package(args[1], args[2])
+              print('saiu ' + args[1] + " " +  args[2])
 
 def end_leds():
   global ARDUINO
@@ -46,3 +65,6 @@ def atualizar_leds(status, numLED):
     formatted_status = 'emdia'
 
   ARDUINO.write('{} {}'.format(formatted_status, numLED + 1))
+  
+
+    
