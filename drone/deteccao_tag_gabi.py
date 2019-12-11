@@ -133,6 +133,9 @@ def threaded_function(arg, arg2):
 
     tag_dict = {"blueX":0, "blueY":0, "blueW":0, "blueH":0}
 
+    detection_tolerance = timedelta(seconds=5)
+    last_detect = datetime.now()
+
     while True:
         if drone is None and test_mode != 3:
             print("Drone has disconected...")
@@ -191,7 +194,10 @@ def threaded_function(arg, arg2):
                             # add green rectangle to identify tag (blue square)
                             rectangle(blue_img, pt1=(x, y), pt2=(x + w, y + h), color=(0, 255, 0), thickness=3)
                             # save image on local folder
-                            save_tag_img(blue_img, TAG_COUNTER)
+                            if last_detect < datetime.now():
+                                save_tag_img(blue_img, TAG_COUNTER)
+                                last_detect = datetime.now() + DETECTION_TOLERANCE  # starts timer
+
                         break
                     else:
                         counter_no_rect += 1
@@ -331,8 +337,8 @@ new_tag_found = False
 
 if __name__ == '__main__':
 
-    test_mode = 1 # camera drone, com voo
-    # test_mode = 2 # camera drone, sem voo
+    # test_mode = 1 # camera drone, com voo
+    test_mode = 2 # camera drone, sem voo
     # test_mode = 3  # camera pc, sem drone
 
     # Create empty folder to store tag pictures
@@ -348,8 +354,8 @@ if __name__ == '__main__':
 
     # TODO: ajustar intervalo de tolerancia entre cada deteccao
     last_detect = datetime.now()
-    detection_tolerance = timedelta(seconds=0.5)
-    area_limit = 6000
+    DETECTION_TOLERANCE = timedelta(seconds=0.5)
+    area_limit = 3000
     isAdjusting = False
 
     # Drone Vars
