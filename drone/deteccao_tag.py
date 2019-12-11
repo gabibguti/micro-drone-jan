@@ -5,14 +5,8 @@ import os
 # from mov_drone import *
 from tello import Tello
 from time import sleep
-from threading import Timer
-from threading import Thread
-
-def para():
-    drone.land()
-
-def mov_dronee(x, y, z, w):
-    drone.goto(int(x), int(y), int(z), int(w))
+from threading import Timer, Thread
+from simple_functions import *
 
 def dentro_regiao():
     global xDif
@@ -23,6 +17,14 @@ def dentro_regiao():
                 return True
     return False
 
+def apply_mask(imagem):
+    imagem_hsv = cvtColor(imagem, COLOR_BGR2HSV)
+    mascara = inRange(imagem_hsv, light_blue, dark_blue)
+    imagem1 = bitwise_and(imagem, imagem, mask=mascara)
+    graybgr = cvtColor(imagem, COLOR_BGR2GRAY)
+    graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
+    blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
+    return blue_img, mascara
 
 def movHoriz(xRef, xReg):
     xDist = (xReg-xRef)*4/3
@@ -51,21 +53,6 @@ def centralizaDrone():
         velZ = -10
     drone.rc(velX, 0, velZ, 0)
 
-
-    #movHoriz(xRef, xReg)
-    #if (xDif > 5) or (xDif < -5):
-    #   movHoriz(xRef, xReg)
-    #if yDif != 0:
-    #   movVert(yRef, yReg)
-    #print("test")
-    #isAdjusting = False
-
-
-def decola():
-    a = 7
-    drone.takeoff()
-    sleep(drone_interval)
-
 def is_square(w, h):
     # A square will have an aspect ratio that is approximately equal to one, otherwise, the shape is a rectangle
     ar = w / float(h)
@@ -85,7 +72,7 @@ def delete_picture_files():
     for tag_picture in os.listdir(pics_dir):
         os.remove(os.path.join(pics_dir,tag_picture))
 
-def take_picture(img, xRef, yRef, xTol, wRef, hRef):
+def take_picture(img, xRef, yRef, wRef, hRef):
     global tag_counter
     print("\n\tTaking Picture! (At: {})".format(datetime.now()))
     print("\t[NEW] x:{}, y:{}, w:{}, h:{}, area:{}".format(xRef, yRef, wRef, hRef, wRef * hRef))
@@ -124,31 +111,30 @@ def threaded_function(arg, arg2):
     area_limit = 6000
     
     # NOTE: Primeiro estado eh de achar uma tag, assumimos que o drone esta alinhado horizontalmente com a tag e so precisa ir para cima
-    curr_state = "find_first_tag" 
-    
-    while True:        
+    curr_state = "find_first_tag"
+
+    # Melhorias rect verde
+    area_limit = 3000
+    show_rect = False
+    counter_no_rect = 0
+    COUNTER_LIMIT = 250
+
+    while True:
         # If no picture taken, then no tag found yet
         if curr_state == "find_first_tag" and len(os.listdir(pics_dir)) > 0:
             curr_state = "centralize"
-        
-        # Parte 1
-        imagem_hsv = cvtColor(imagem, COLOR_BGR2HSV)
-        mascara = inRange(imagem_hsv, light_blue, dark_blue)
-        imagem1 = bitwise_and(imagem, imagem, mask=mascara)
 
-        # Parte 2
-        mascara2 = bitwise_not(mascara)
-        graybgr = cvtColor(imagem, COLOR_BGR2GRAY)
-        graybgr = cvtColor(graybgr, COLOR_GRAY2BGR)
-        imagem2 = bitwise_and(graybgr, graybgr, mask=mascara2)
+        # print(imagem)
+        if not len(imagem) > 0:
+            continue
 
-        # Parte 3
-        blue_img = addWeighted(graybgr, 1, imagem1, 1, 0)
+        # Mascaras
+        blue_img, mascara = apply_mask(imagem)
 
         # FIXME: Versoes diferentes do OpenCV podem causar problemas aqui na "findContours" (nesse caso foi utilizada a versao 3)
         contornos, _ = findContours(mascara, RETR_TREE, CHAIN_APPROX_SIMPLE)
         area = 0
-        
+
         xOld = xRef
         yOld = yRef
         hOld = hRef
@@ -162,13 +148,13 @@ def threaded_function(arg, arg2):
                 if len(approx) == 4:
                     # compute the bounding box of the contour and use the bounding box to compute the aspect ratio
                     (x, y, w, h) = boundingRect(approx)
-                    # TODO: Ajustar valor de "area_limit"
-                    if is_square(w, h) and w * h >= area_limit:                        
+                    if w * h >= area_limit:
+                        take_picture(blue_img, xRef, yRef, wRef, hRef) # TODO: Change it so it wont take pictures all the time
+                        show_rect = True
                         xRef = x
                         yRef = y
                         wRef = w
                         hRef = h
-                        area = w * h
                         xMid = int(blue_img.shape[1] / 2)
                         yMid = int(blue_img.shape[0] / 2)
                         xReg = (xMid - wRef/2)
@@ -176,30 +162,31 @@ def threaded_function(arg, arg2):
                         xDif = xReg - xRef
                         yDif = yRef - yReg
                         break
-        
-        #if last_detect > datetime.now():
-        img_no_green_rect = blue_img.copy()
-        rectangle(blue_img, pt1=(xRef, yRef), pt2=(xRef + wRef, yRef + hRef), color=(0, 255, 0), thickness=3)
-        
+                    else:
+                        counter_no_rect += 1
+                    if counter_no_rect >= COUNTER_LIMIT:
+                        show_rect = False
+
+        if show_rect:
+            rectangle(blue_img, pt1=(xRef, yRef), pt2=(xRef + wRef, yRef + hRef), color=(0, 255, 0), thickness=3)
+
+
         if is_new_square(xRef, xOld, yRef, yOld, xTol) and last_detect < datetime.now():
             new_tag_found = True ## CHECK HERE
-            take_picture(blue_img, xRef, yRef, xTol, wRef, hRef)
+            take_picture(blue_img, xRef, yRef, wRef, hRef)
             last_detect = datetime.now() + detection_tolerance  # starts timer
-            
+
             # todo delete test:
             #if curr_state != "find_next_tag":
             #    curr_state = "find_next_tag"
             #elif new_tag_found == True:
             #    curr_state = "detect_qr_code"
-            
-        #text = "xReg: {}".format(xReg)
-        #cv2.putText(blue_img, text, (xReg, yReg), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
-        if last_detect > datetime.now():
-            final_img = blue_img.copy()
-        else:
-            final_img = img_no_green_rect.copy()
-        
+        # text = "xReg: {}".format(xReg)
+        # cv2.putText(blue_img, text, (xReg, yReg), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+        final_img = blue_img.copy()
+
         if kill_thread:
             break
     print("Thread died")
@@ -221,6 +208,7 @@ wRef = 0
 hRef = 0
 xDif = 0
 yDif = 0
+###################### GLOBAL VARS ##############################
 
 def nao_morre():
     global timer
@@ -302,6 +290,7 @@ def mov_drone_recorrente():
     timer_mov_drone = Timer(0.1, mov_drone_recorrente) # 100 ms
     timer_mov_drone.start()
 
+###################### GLOBAL VARS ##############################
 curr_dir = os.getcwd()
 pics_dir = os.path.join(curr_dir, "tag-pics")
 tag_counter = 0
@@ -310,14 +299,11 @@ drone_interval = 7
 kill_thread = False
 found_first_tag = False
 new_tag_found = False
+###################### GLOBAL VARS ##############################
 
 if __name__ == '__main__':
 
-    # Color bounds
-    # TODO: ajustar faixa de valores da cor azul
-    # light_blue = (110, 50, 50)
-    # dark_blue = (130, 255, 255)
-    light_blue = (90, 50, 38)
+    light_blue = (90, 150, 0)
     dark_blue = (150, 255, 255)
 
     # Reference Variables
@@ -332,9 +318,8 @@ if __name__ == '__main__':
     if not os.path.exists(pics_dir):
         os.makedirs(pics_dir)
     else:
-        # TODO: Delete all files boefore a new session or just for test purposes
+        # Delete all files boefore a new session
         delete_picture_files()
-
 
     # TODO: Ajustar valores de tolerancia (depende do tamanho da nossa area azul a ser capturada, a que distancia elas \
     #  serao capturadas, espacamento entre cada quadrado azul na prateleira)
@@ -342,7 +327,6 @@ if __name__ == '__main__':
     yTol = 75
 
     # TODO: ajustar intervalo de tolerancia entre cada deteccao
-    last_detect = datetime.now()
     detection_tolerance = timedelta(seconds=0.5)
     area_limit = 6000
     isAdjusting = False
@@ -358,19 +342,14 @@ if __name__ == '__main__':
     drone = Tello("TELLO-C7AC08", test_mode=False)
     drone.inicia_cmds()
     sleep(drone_interval)
-    drone.takeoff()
+    # drone.takeoff()
     sleep(drone_interval)
-    # Set drone orientation goto(0,0,0)
-#    drone.goto(0, 0, 0, 10)
-#    sleep(drone_interval)
- #   drone.goto(0, 0, 35, 10)
-  #  sleep(drone_interval)
 
     # Timers:
     timer = Timer(5,nao_morre)
     timer.start()
-    timer_mov_drone = Timer(0.1, mov_drone_recorrente)
-    timer_mov_drone.start()
+    # timer_mov_drone = Timer(0.1, mov_drone_recorrente)
+    # timer_mov_drone.start()
     state_timer = Timer(1.5,print_state)
     state_timer.start()
     
