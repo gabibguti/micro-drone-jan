@@ -4,30 +4,41 @@ import sys
 # import app
 import random
 import requests
+from threading import Timer
 
+
+loop_func_timer = None
 ARDUINO = None
 package_id = 1000
 url = "http://localhost:5000"
 def start_leds():
+  global loop_func_timer
   global ARDUINO
-  global package_id
   # ARDUINO = serial.Serial('COM31', 9600)
   ARDUINO = serial.Serial('/dev/cu.usbmodem143101', 9600)
-  while True:
-      texto_recebido = ARDUINO.readline().decode().strip()
-      print(texto_recebido)
-      if texto_recebido != "":
-          args = texto_recebido.split(' ')
-          if args[0] == 'novo':
-              date = "2020-01-01"
-              requests.get(url + "/add_package/{}/{}/{}/{}".format(package_id, date, args[1], args[2]))
-              # app.add_package(str(package_id), date, args[1], args[2])
-              package_id += 1
-              print('novo ' + args[1] + " " +  args[2])
-          elif args[0] == 'saiu':
-              requests.get(url + "/remove_package/{}/{}".format(args[1], args[2]))
-              # app.remove_package(args[1], args[2])
-              print('saiu ' + args[1] + " " +  args[2])
+  loop_func_timer = Timer(0.2, loop_func)
+  loop_func_timer.start()
+
+def loop_func():
+  global package_id
+  texto_recebido = ARDUINO.readline().decode().strip()
+  print(texto_recebido)
+  if texto_recebido != "":
+      args = texto_recebido.split(' ')
+      if args[0] == 'novo':
+          date = "2020-01-01"
+          requests.get(url + "/add_package/{}/{}/{}/{}".format(package_id, date, args[1], args[2]))
+          # app.add_package(str(package_id), date, args[1], args[2])
+          package_id += 1
+          print('novo ' + args[1] + " " +  args[2])
+      elif args[0] == 'saiu':
+          requests.get(url + "/remove_package/{}/{}".format(args[1], args[2]))
+          # app.remove_package(args[1], args[2])
+          print('saiu ' + args[1] + " " +  args[2])
+  
+  loop_func_timer = Timer(0.20, loop_func) # 100 ms
+  loop_func_timer.start()
+  
 
 def end_leds():
   global ARDUINO
@@ -71,6 +82,5 @@ def atualizar_leds(status, numLED):
   ARDUINO.write('{} {}'.format(formatted_status, numLED + 1))
   
 
-    
 if __name__ == '__main__':
   start_leds()

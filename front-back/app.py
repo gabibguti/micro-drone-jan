@@ -6,8 +6,9 @@ import json
 from time import sleep
 # from fita_leds.controle_fita_LED import start_leds, end_leds, apagar_leds
 import sys
-sys.path.insert(0, '../fita_leds/')
+# sys.path.insert(0, '../fita_leds/')
 import controle_fita_LED
+from threading import Thread
 
 # Interface settings
 app = Flask(__name__, template_folder='template', static_folder='static')
@@ -23,7 +24,7 @@ def init_packages():
   data = {}
   for row in range(0, 2):
     data[row] = {}
-    for col in range(0, 3):
+    for col in range(0, 2):
       data[row][col] = None
   return data
 
@@ -33,6 +34,9 @@ def init_shelf():
       "busy": 0,
       "free": 10
     }
+
+def teste():
+  print("everything is fine")
 
 DATA_Shelf = init_shelf()
 DATA_Packages = init_packages()
@@ -148,7 +152,9 @@ def add_package(package_id, date, row, col):
 @app.route('/remove_package/<int:row>/<int:col>')
 def remove_package(row, col):
     # Note: data must be in the format: YYYY-MM-DD
-    package = list(collection.find({"row": row, "col": col}))
+    # package = list(collection.find({"row": row, "col": col}))
+    my_query = {"row": row, "col": col}
+    collection.delete_one(my_query)
     return 'Package removed from database'
 
 @app.route('/package/<int:package_id>')
@@ -179,9 +185,9 @@ def get_delayed_package():
 def clear_database():
     collection.remove({})
     return 'Base de dados resetada!'
-
+    
 # Run App
 if __name__ == '__main__':
     controle_fita_LED.start_leds()
-    app.run(host='localhost', port=5000, debug=True)
+    app.run(host='localhost', port=5000, debug=False)
 
